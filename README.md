@@ -29,11 +29,13 @@ Parametric strip/module geometry folds into **Mu2eBO Candidate G**
 [`scint-fibre-fastsim` wiki](https://github.com/RobMina/ai-config-expdesign)
 (local: `~/ai-config/expdesign/wiki/synthesis/scint-fibre-fastsim.md`).
 
-## Status (0.1.0 scaffold)
+## Status (0.1.1)
 
-- Core copied from `crvfastsim.lookupgen.core` **without** changing mu2e-fastsim
-  yet (copy-with-NOTICE). A later extract PR will shim/re-export.
-- Backend and G4-hook APIs are stubs; Phase 1 fills the public toy + CRVStandalone bench.
+- Core synced with `crvfastsim.lookupgen.core` (copy-with-NOTICE); mu2e-fastsim
+  extract PR shims/re-exports onto this package.
+- Toy G4 self-check (`run_toy_selfcheck`) and CRVStandalone compare-plan hooks.
+- Mu2e SiPM bind start: inject `crvfastsim.response.sipm.simulate` or
+  `bind_crvfastsim_sipm()`; NOvA APD still a stub.
 - No experiment-internal inputs, conditions or released tables.
 
 ## Install and test

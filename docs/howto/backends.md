@@ -7,5 +7,14 @@
 3. Register experiment table formats and hep-simlib manifests in the experiment
    package (`mu2e-fastsim`, `nova-fastsim`), not here.
 
-Shipped stubs: `Mu2eSiPMBackend` (SiPM), `NovaAPDBackend` (APD). Both raise
-`NotImplementedError` until Phase 1/2 binds real models.
+## Mu2e SiPM (bind start)
+
+```python
+from scintfibrefastsim.backends import Mu2eSiPMBackend, bind_crvfastsim_sipm
+
+# In a mu2e-fastsim environment (needs CRVFS_LOOKUP_DIR for the photon map):
+backend = bind_crvfastsim_sipm()
+# Or inject: Mu2eSiPMBackend(simulate=sipm.simulate, photon_map=pmap, config=cfg)
+```
+
+`NovaAPDBackend` remains a Phase-2 stub.

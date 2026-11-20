@@ -1,12 +1,21 @@
 # Geant4 / CRVStandalone compare hooks
 
 ```python
-from scintfibrefastsim.validation import compare_plan_crvstandalone, compare_plan_toy
-from scintfibrefastsim.validation.g4_hooks import run_compare
+from scintfibrefastsim.validation import (
+    compare_plan_crvstandalone, compare_plan_toy, run_compare, run_toy_selfcheck,
+)
 
+# CI / laptop: JAX core self-check (no Geant4)
+receipt = run_toy_selfcheck(dtype="float64", seed=1)
+print(receipt.status, receipt.metrics)
+
+# Declared CRVStandalone plan: needs $SCINTFIBRE_CRVSTANDALONE (wls or wrapper)
 plan = compare_plan_crvstandalone()
-# run_compare(plan)  # Phase 1 — raises NotImplementedError in 0.1.0
+receipt = run_compare(plan, mode="auto")  # oracle_missing if unset
 ```
+
+Oracle wrapper contract: argv = ``geometry nphot seed dtype``; last stdout line is JSON
+with at least ``gen`` and ``hits``.
 
 Rules:
 
