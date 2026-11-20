@@ -4,7 +4,7 @@ Share fibre/WLS transport and the table contract across experiments. Photosensor
 response and offline table formats live in backends (Mu2e SiPM, NOvA APD).
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 from . import backends, core, geometry, validation
 

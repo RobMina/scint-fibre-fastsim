@@ -31,3 +31,23 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python -m pytest -q
+
+  # One leg pinned to the jax/numpy versions mu2e-fastsim CI uses, so goldens do not drift.
+  pytest-pinned:
+    name: pytest (pinned jax/numpy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned
+        run: |
+          python -m pip install -e '.[test]'
+          python -m pip install 'jax==0.11.2' 'numpy==2.5.4'
+          python -c "import jax,numpy; print(jax.__version__, numpy.__version__)"
+      - name: Test
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m pytest -q

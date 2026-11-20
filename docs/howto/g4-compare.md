@@ -9,13 +9,24 @@ from scintfibrefastsim.validation import (
 receipt = run_toy_selfcheck(dtype="float64", seed=1)
 print(receipt.status, receipt.metrics)
 
-# Declared CRVStandalone plan: needs $SCINTFIBRE_CRVSTANDALONE (wls or wrapper)
+# Declared CRVStandalone plan: needs a WRAPPER on $SCINTFIBRE_CRVSTANDALONE
 plan = compare_plan_crvstandalone()
 receipt = run_compare(plan, mode="auto")  # oracle_missing if unset
 ```
 
-Oracle wrapper contract: argv = ``geometry nphot seed dtype``; last stdout line is JSON
-with at least ``gen`` and ``hits``.
+## Wrapper required (not raw `wls`)
+
+`$SCINTFIBRE_CRVSTANDALONE` must point at a **wrapper script**, not the raw
+CRVStandalone `wls` binary. The contract:
+
+- argv: `geometry nphot seed dtype`
+- last stdout line: JSON with at least `gen` and `hits`
+
+`geometry=toy_strip` is this package's public toy name; the wrapper maps it to a
+CRVStandalone counter card. See `examples/crvstandalone_oracle_wrapper.sh`.
+
+Modes: `selfcheck`, `oracle`, `auto` (unknown modes raise `ValueError`). Oracle
+timeouts become `CompareReceipt(status="failed")`.
 
 Rules:
 

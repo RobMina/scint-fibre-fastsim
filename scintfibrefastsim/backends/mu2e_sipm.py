@@ -3,11 +3,16 @@
 Full pixel model stays in mu2e-fastsim until a later extract moves it. This module
 accepts an injected ``simulate`` callable with that API so the public package
 never imports Mu2e-internal code by default.
+
+Core fibre-end ``Arrival`` values are *optical* arrivals (after transport, before
+photosensor PDE). ``detect`` does not apply a separate ``pde_peak`` scale: the
+injected ``simulate`` (stock MakeCrvSiPMCharges) already draws per-pixel firing.
+``Arrival.energy_eV`` is carried for provenance only; stock simulate does not use it.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 import numpy as np
@@ -20,7 +25,11 @@ SimulateFn = Callable[..., dict]
 
 @dataclass
 class SiPMConfigView:
-    """Subset of SiPM knobs visible to this package (mirrors crvfastsim.response.sipm.SiPMConfig defaults)."""
+    """Stand-in with every field ``crvfastsim.response.sipm.simulate`` reads.
+
+    Defaults match ``sipm.SiPMConfig``. Prefer passing a real ``SiPMConfig`` when
+    binding from mu2e-fastsim.
+    """
 
     n_pixels_x: int = 40
     n_pixels_y: int = 40
@@ -31,7 +40,17 @@ class SiPMConfigView:
     p2: float = 2.7
     cross_talk: float = 0.04
     thermal_rate: float = 0.0
+    trap0_prob: float = 0.0
+    trap1_prob: float = 0.0
+    trap0_lifetime: float = 5.0
+    trap1_lifetime: float = 50.0
+    inactive: tuple = field(
+        default_factory=lambda: tuple((x, y) for x in range(18, 22) for y in range(18, 22))
+    )
     pixel_id: str = "lrint"
+
+    def p_fire(self, v):
+        return self.p1 * (1.0 - np.exp(-np.asarray(v, float) / self.p2))
 
 
 class Mu2eSiPMBackend:
@@ -39,6 +58,9 @@ class Mu2eSiPMBackend:
 
     Construct with ``simulate`` / ``photon_map`` from ``crvfastsim.response.sipm``
     (see ``bind_crvfastsim_sipm``), or call ``detect`` only after binding.
+
+    When ``simulate`` is injected, ``config`` must be a full config (or omit it to
+    use ``SiPMConfigView``, which supplies every attribute stock ``simulate`` reads).
     """
 
     name = "mu2e_sipm"
@@ -47,19 +69,37 @@ class Mu2eSiPMBackend:
     def __init__(
         self,
         *,
-        pde_peak: float = 0.35,
-        n_pixels: int = 1584,
         simulate: SimulateFn | None = None,
         photon_map: Any = None,
         config: Any = None,
         t_end: float = 1e5,
     ):
-        self.pde_peak = float(pde_peak)
-        self.n_pixels = int(n_pixels)
         self._simulate = simulate
         self._photon_map = photon_map
-        self._config = config if config is not None else SiPMConfigView()
+        if config is None:
+            if simulate is not None:
+                config = SiPMConfigView()
+            else:
+                config = SiPMConfigView()
+        self._config = config
         self.t_end = float(t_end)
+        self._require_simulate_config_fields()
+
+    def _require_simulate_config_fields(self) -> None:
+        """Fail closed if an injected simulate would see a truncated config."""
+        if self._simulate is None:
+            return
+        required = (
+            "inactive", "trap0_prob", "trap1_prob", "trap0_lifetime", "trap1_lifetime",
+            "overvoltage", "time_constant", "capacitance", "cross_talk", "thermal_rate",
+            "n_pixels_x", "n_pixels_y", "pixel_id", "p_fire",
+        )
+        missing = [k for k in required if not hasattr(self._config, k)]
+        if missing:
+            raise TypeError(
+                "SiPM config is missing fields required by crvfastsim.response.sipm.simulate: "
+                + ", ".join(missing)
+            )
 
     @property
     def bound(self) -> bool:
@@ -69,12 +109,14 @@ class Mu2eSiPMBackend:
         if not self.bound:
             raise NotImplementedError(
                 "Mu2e SiPM backend is unbound: pass simulate= and photon_map= from "
-                "crvfastsim.response.sipm, or call bind_crvfastsim_sipm()"
+                "crvfastsim.response.sipm, or call bind_crvfastsim_sipm() / "
+                "bind_crvfastsim_sipm_synthetic()"
             )
         if not arrivals:
             return {"n_pe": 0.0, "backend": self.name, "n_charges": 0}
         chan = np.asarray([a.channel for a in arrivals], dtype=np.int64)
         time = np.asarray([a.time_ns for a in arrivals], dtype=float)
+        # carried id into sipm.simulate's photon column (not a physics index)
         photon = np.arange(len(arrivals), dtype=np.int64)
         rng = np.random.default_rng(int(seed))
         out = self._simulate(

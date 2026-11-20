@@ -13,10 +13,13 @@ from typing import Protocol, runtime_checkable
 
 @dataclass(frozen=True)
 class Arrival:
-    """One scored photon arrival at a fibre-end photosensor face.
+    """One scored optical arrival at a fibre-end photosensor face (pre-PDE).
 
-    Units match the core transport: time in ns, position in mm in the strip/cell
-    frame. ``channel`` is the backend's channel index (SiPM or APD).
+    Units match the core transport: time in ns. ``channel`` is the backend's
+    channel index (SiPM or APD). ``energy_eV`` is provenance for the photon
+    energy at the face; stock Mu2e SiPM ``simulate`` does not use it (pixel
+    firing is drawn inside ``simulate``). Arrivals are *after* fibre transport
+    and *before* photosensor detection efficiency.
     """
 
     time_ns: float

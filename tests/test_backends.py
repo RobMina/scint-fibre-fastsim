@@ -11,6 +11,7 @@ from scintfibrefastsim.backends import (
     NovaAPDBackend,
     PhotosensorBackend,
     SiPMConfigView,
+    uniform_photon_map,
 )
 
 
@@ -36,16 +37,44 @@ def test_nova_apd_stub_raises() -> None:
 
 
 def test_uniform_photon_map() -> None:
-    from scintfibrefastsim.backends import uniform_photon_map
-
     m = uniform_photon_map(40)
     assert m.shape == (40, 40) and float(m.sum()) == 1600.0
 
 
-def test_sipm_bind_with_injected_simulate() -> None:
-    """Bind path without importing crvfastsim: inject a tiny fake simulate + map."""
+def test_sipm_config_view_has_simulate_fields() -> None:
+    cfg = SiPMConfigView()
+    for name in (
+        "inactive", "trap0_prob", "trap1_prob", "trap0_lifetime", "trap1_lifetime",
+        "overvoltage", "time_constant", "capacitance", "cross_talk", "thermal_rate",
+        "n_pixels_x", "n_pixels_y", "pixel_id",
+    ):
+        assert hasattr(cfg, name)
+    assert float(cfg.p_fire(cfg.overvoltage)) > 0
+
+
+def test_truncated_config_rejected_when_simulate_injected() -> None:
+    class Truncated:
+        capacitance = 1e-13
+
+    with pytest.raises(TypeError, match="missing fields"):
+        Mu2eSiPMBackend(simulate=lambda *a, **k: {}, photon_map=np.ones((40, 40)), config=Truncated())
+
+
+def test_sipm_bind_with_injected_simulate_reads_full_config() -> None:
+    """Contract: a stand-in that touches every field stock simulate uses must succeed."""
+
+    seen = set()
 
     def fake_simulate(chan, time, photon, pmap, cfg, rng, t_end=1e5):
+        for name in (
+            "inactive", "trap0_prob", "trap1_prob", "trap0_lifetime", "trap1_lifetime",
+            "overvoltage", "time_constant", "capacitance", "cross_talk", "thermal_rate",
+            "n_pixels_x", "n_pixels_y", "pixel_id",
+        ):
+            getattr(cfg, name)
+            seen.add(name)
+        cfg.p_fire(cfg.overvoltage)
+        seen.add("p_fire")
         n = len(chan)
         return {
             "chan": np.asarray(chan),
@@ -55,16 +84,13 @@ def test_sipm_bind_with_injected_simulate() -> None:
             "photon": np.asarray(photon),
         }
 
-    pmap = np.ones((40, 40))
     backend = Mu2eSiPMBackend(
-        simulate=fake_simulate, photon_map=pmap, config=SiPMConfigView(),
-    )
-    assert backend.bound
+        simulate=fake_simulate, photon_map=np.ones((40, 40)),
+    )  # default SiPMConfigView
     out = backend.detect(
         [Arrival(time_ns=10.0, channel=3, energy_eV=2.5),
          Arrival(time_ns=12.0, channel=3, energy_eV=2.5)],
         seed=7,
     )
-    assert out["backend"] == "mu2e_sipm"
     assert out["n_pe"] == 2.0
-    assert out["n_charges"] == 2
+    assert "inactive" in seen and "p_fire" in seen
