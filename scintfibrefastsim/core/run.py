@@ -73,7 +73,8 @@ def generate(counter, binning, simtype, bins, nphot, dtype="float64", seed=1, la
             t_compact = time.time() - t0 if t_compact is None else t_compact
     wall = time.time() - t0
     try:
-        from scintfibrefastsim import __version__ as _pkg_version
+        from importlib.metadata import version as _pkg_ver
+        _pkg_version = _pkg_ver("scint-fibre-fastsim")
     except Exception:  # pragma: no cover
         _pkg_version = "unknown"
     return _result(bins, nphot, simtype, s, aux, acc,

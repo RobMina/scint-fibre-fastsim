@@ -30,7 +30,7 @@ def test_core_imports_nothing_experiment_specific(path: Path) -> None:
         if name not in {""} and not name.startswith("."):
             # relative imports appear as empty module with level>0; top-level only
             pass
-    allowed_top = {"numpy", "jax", "math", "bisect", "dataclasses", "time", "typing", "collections", "functools", "itertools", "warnings", "abc", "enum", "numbers", "operator", "sys", "os", "re", "json", "pathlib", "copy", "struct", "hashlib", "array"}
+    allowed_top = {"numpy", "jax", "math", "bisect", "dataclasses", "time", "typing", "collections", "functools", "itertools", "warnings", "abc", "enum", "numbers", "operator", "sys", "os", "re", "json", "pathlib", "copy", "struct", "hashlib", "array", "importlib"}
     for name in _imports(path):
         if not name or name.startswith("scintfibrefastsim"):
             continue
