@@ -35,6 +35,13 @@ def test_nova_apd_stub_raises() -> None:
         NovaAPDBackend().detect([Arrival(time_ns=1.0, channel=0, energy_eV=2.5)])
 
 
+def test_uniform_photon_map() -> None:
+    from scintfibrefastsim.backends import uniform_photon_map
+
+    m = uniform_photon_map(40)
+    assert m.shape == (40, 40) and float(m.sum()) == 1600.0
+
+
 def test_sipm_bind_with_injected_simulate() -> None:
     """Bind path without importing crvfastsim: inject a tiny fake simulate + map."""
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scint-fibre-fastsim"
-version = "0.1.1"
+version = "0.1.2"
 description = "Scintillator + WLS-fibre optical MC and table generator for HEP fast simulation (common interface; Mu2e SiPM and NOvA APD backends)"
 readme = "README.md"
 license = {text = "Apache-2.0"}

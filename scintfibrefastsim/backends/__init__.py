@@ -6,7 +6,13 @@ table formats stay in the experiment adapters that depend on this package.
 """
 
 from .base import Arrival, PhotosensorBackend
-from .mu2e_sipm import Mu2eSiPMBackend, SiPMConfigView, bind_crvfastsim_sipm
+from .mu2e_sipm import (
+    Mu2eSiPMBackend,
+    SiPMConfigView,
+    bind_crvfastsim_sipm,
+    bind_crvfastsim_sipm_synthetic,
+    uniform_photon_map,
+)
 from .nova_apd import NovaAPDBackend
 
 __all__ = [
@@ -15,5 +21,7 @@ __all__ = [
     "Mu2eSiPMBackend",
     "SiPMConfigView",
     "bind_crvfastsim_sipm",
+    "bind_crvfastsim_sipm_synthetic",
+    "uniform_photon_map",
     "NovaAPDBackend",
 ]

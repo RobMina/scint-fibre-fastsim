@@ -103,6 +103,7 @@ def bind_crvfastsim_sipm(
 
     Imports crvfastsim only when ``sipm_module`` is omitted. ``photon_map`` defaults
     to ``sipm_module.photon_map()`` (needs ``$CRVFS_LOOKUP_DIR`` / Mu2e inputs).
+    Pass ``photon_map=uniform_photon_map()`` for a public synthetic map (no Mu2e inputs).
     """
     if sipm_module is None:
         from crvfastsim.response import sipm as sipm_module  # type: ignore
@@ -114,5 +115,32 @@ def bind_crvfastsim_sipm(
         simulate=sipm_module.simulate,
         photon_map=photon_map,
         config=config,
+        **kwargs,
+    )
+
+
+def uniform_photon_map(n: int = 40) -> np.ndarray:
+    """Public synthetic fibre photon map (flat); for bind smokes without Mu2e inputs."""
+    return np.ones((int(n), int(n)), dtype=float)
+
+
+def bind_crvfastsim_sipm_synthetic(
+    *,
+    sipm_module: Any = None,
+    n: int = 40,
+    **kwargs: Any,
+) -> Mu2eSiPMBackend:
+    """Bind real ``sipm.simulate`` with a uniform public photon map (no CRVFS_LOOKUP_DIR)."""
+    if sipm_module is None:
+        from crvfastsim.response import sipm as sipm_module  # type: ignore
+    cfg = kwargs.pop("config", None)
+    if cfg is None:
+        cfg = sipm_module.SiPMConfig(
+            pixel_id="truncate", thermal_rate=0.0, trap0_prob=0.0, trap1_prob=0.0,
+        )
+    return bind_crvfastsim_sipm(
+        sipm_module=sipm_module,
+        photon_map=uniform_photon_map(n),
+        config=cfg,
         **kwargs,
     )
