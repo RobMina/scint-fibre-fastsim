@@ -1,24 +1,30 @@
 {
-  "chunk_iters": 400,
+  "length": 300.0,
+  "simtype": 0,
+  "nphot": 200,
+  "seed": 7,
+  "lanes": 256,
+  "chunk_iters": 500,
   "dtypes": {
-    "float32": {
-      "gen_sha256": "c1cf8001be8ae536bd71deac7ac1a737553e43c676796207d6962f4e826f0555",
-      "gen_sum": 1590,
-      "he_sha256": "a52ccdd2f3c50ccbc256778fb71e29cc9c475be48b1b84ef493b8280bf0b3d21",
-      "ht_sha256": "07cf7229cc7dd40391c3fa849573c1b875e8272cfd81be32cab0ecc651b076c8",
-      "ht_sum": 2
-    },
     "float64": {
-      "gen_sha256": "c1cf8001be8ae536bd71deac7ac1a737553e43c676796207d6962f4e826f0555",
-      "gen_sum": 1590,
-      "he_sha256": "4ce50722ebc0ae1a18e0e4df20e66b90e4527f14b860c585baeffdb83b4bb6b1",
-      "ht_sha256": "a16aaa691159d2611159ba4b082b5c0d185cbf7dc7c8ba1004c22740ff4d42fa",
-      "ht_sum": 2
+      "gen_sum": 1588,
+      "ht_sum": 2,
+      "gen_sha256": "9bc5274985c055fad2f6456811dedad5cede5003a214d2236a8e934e508fcc4f",
+      "ht_sha256": "825f2ea8fbadff95af26dcd47179c58e75d79f95ffd357b234126e935f2997a6",
+      "he_sha256": "0d41bcad4e21c679bcb0a2580325ee3aa597b65159a118ff174b1607e9bfc9e5"
+    },
+    "float32": {
+      "gen_sum": 1588,
+      "ht_sum": 2,
+      "gen_sha256": "9bc5274985c055fad2f6456811dedad5cede5003a214d2236a8e934e508fcc4f",
+      "ht_sha256": "825f2ea8fbadff95af26dcd47179c58e75d79f95ffd357b234126e935f2997a6",
+      "he_sha256": "0d41bcad4e21c679bcb0a2580325ee3aa597b65159a118ff174b1607e9bfc9e5"
     }
   },
-  "lanes": 256,
-  "length": 300.0,
-  "nphot": 200,
-  "seed": 1,
-  "simtype": 0
+  "provenance": {
+    "jax": "0.11.2",
+    "numpy": "2.5.4",
+    "python": "3.12",
+    "platform": "linux-x86_64-ci"
+  }
 }
