@@ -1,8 +1,9 @@
 """Geant4 / CRVStandalone comparison drivers and receipts.
 
 Phase 1: a toy self-check that runs the JAX core on a public strip, and a declared
-CRVStandalone compare plan. Full oracle runs need Mu2e/CRVStandalone on
-``$SCINTFIBRE_CRVSTANDALONE`` (the ``wls`` binary or a wrapper script).
+CRVStandalone compare plan. Full oracle runs need a *wrapper* on
+``$SCINTFIBRE_CRVSTANDALONE`` that speaks this package's JSON contract — not the
+raw CRVStandalone ``wls`` binary (see ``examples/crvstandalone_oracle_wrapper.sh``).
 """
 
 from __future__ import annotations
@@ -16,6 +17,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+MODES = frozenset({"auto", "selfcheck", "oracle"})
 
 
 @dataclass(frozen=True)
@@ -52,14 +55,21 @@ class CompareReceipt:
 
 
 def compare_plan_crvstandalone() -> G4ComparePlan:
-    """Declared plan for the Phase-1 CRVStandalone bench."""
+    """Declared plan for the Phase-1 CRVStandalone bench.
+
+    ``geometry=\"toy_strip\"`` is this package's public toy; a wrapper must map it
+    to a CRVStandalone counter card (see examples/crvstandalone_oracle_wrapper.sh).
+    """
     return G4ComparePlan(
         name="strip_vs_crvstandalone",
         oracle="Mu2e/CRVStandalone",
         geometry="toy_strip",
         nphot_per_bin=10_000,
         simtypes=(0, 1, 2),
-        notes="Public toy strip; no Mu2e-internal released tables",
+        notes=(
+            "Public toy_strip; wrapper must map the name to a CRVStandalone card. "
+            "No Mu2e-internal released tables. Raw wls is not a drop-in binary."
+        ),
     )
 
 
@@ -76,7 +86,7 @@ def compare_plan_toy() -> G4ComparePlan:
 
 
 def crvstandalone_path() -> str | None:
-    """Path to a CRVStandalone ``wls`` (or wrapper) if configured."""
+    """Path to a CRVStandalone *wrapper* (not raw wls) if configured."""
     return os.environ.get("SCINTFIBRE_CRVSTANDALONE") or None
 
 
@@ -121,22 +131,31 @@ def run_toy_selfcheck(*, dtype: str = "float64", seed: int = 1,
             "n_bins": int(len(r["bins"])),
             "stats": {k: (int(v) if hasattr(v, "item") else v)
                       for k, v in dict(r.get("stats") or {}).items()
-                      if k in ("capped", "forced", "badsrc", "device", "platform", "model")},
+                      if k in ("capped", "forced", "badsrc", "device", "platform", "model",
+                               "package_version")},
         },
         notes="toy_selfcheck: JAX core only",
     )
 
 
 def run_compare(plan: G4ComparePlan | None = None, *, dtype: str = "float64",
-                seed: int = 1, mode: str = "auto") -> CompareReceipt:
+                seed: int = 1, mode: str = "auto",
+                timeout_s: float = 3600.0) -> CompareReceipt:
     """Execute a compare plan.
 
     ``mode``:
       - ``selfcheck``: always run ``run_toy_selfcheck`` (CI default path)
-      - ``oracle``: require ``$SCINTFIBRE_CRVSTANDALONE`` and invoke it
+      - ``oracle``: require ``$SCINTFIBRE_CRVSTANDALONE`` wrapper and invoke it
       - ``auto``: oracle if the env is set, else selfcheck for toy plans,
-        ``oracle_missing`` for CRVStandalone plans without the binary
+        ``oracle_missing`` for CRVStandalone plans without the wrapper
+
+    The oracle must be a **wrapper** (see ``examples/crvstandalone_oracle_wrapper.sh``),
+    not the raw CRVStandalone ``wls`` binary. Contract: argv =
+    ``geometry nphot seed dtype``; last stdout line is JSON with at least
+    ``gen`` and ``hits``.
     """
+    if mode not in MODES:
+        raise ValueError(f"unknown mode {mode!r}; expected one of {sorted(MODES)}")
     plan = plan or compare_plan_crvstandalone()
     if mode == "selfcheck" or (mode == "auto" and plan.oracle == "toy_selfcheck"):
         return run_toy_selfcheck(dtype=dtype, seed=seed, nphot=plan.nphot_per_bin)
@@ -149,7 +168,10 @@ def run_compare(plan: G4ComparePlan | None = None, *, dtype: str = "float64",
             dtype=dtype,
             seed=int(seed),
             wall_s=0.0,
-            notes="Set SCINTFIBRE_CRVSTANDALONE to the CRVStandalone wls binary (or wrapper)",
+            notes=(
+                "Set SCINTFIBRE_CRVSTANDALONE to a wrapper that speaks the JSON contract "
+                "(examples/crvstandalone_oracle_wrapper.sh); raw wls is not accepted"
+            ),
         )
     if not path:
         raise FileNotFoundError(
@@ -157,16 +179,23 @@ def run_compare(plan: G4ComparePlan | None = None, *, dtype: str = "float64",
         )
 
     t0 = time.perf_counter()
-    # Wrapper contract: argv[1]=geometry name, argv[2]=nphot, argv[3]=seed, argv[4]=dtype
-    # stdout: one JSON object with at least gen, hits (same keys as a receipt metrics block).
     try:
         proc = subprocess.run(
             [path, plan.geometry, str(plan.nphot_per_bin), str(seed), dtype],
-            check=True, capture_output=True, text=True, timeout=3600,
+            check=True, capture_output=True, text=True, timeout=float(timeout_s),
         )
         metrics = json.loads(proc.stdout.strip().splitlines()[-1])
         status = "ok"
-        notes = f"oracle={path}"
+        notes = f"oracle_wrapper={path}"
+    except subprocess.TimeoutExpired as exc:
+        return CompareReceipt(
+            plan=asdict(plan),
+            status="failed",
+            dtype=dtype,
+            seed=int(seed),
+            wall_s=time.perf_counter() - t0,
+            notes=f"oracle timed out after {timeout_s}s: {exc}",
+        )
     except (OSError, subprocess.CalledProcessError, json.JSONDecodeError, IndexError) as exc:
         return CompareReceipt(
             plan=asdict(plan),

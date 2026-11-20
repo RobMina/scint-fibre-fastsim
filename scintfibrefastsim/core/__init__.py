@@ -6,6 +6,6 @@ Imports only the standard library, NumPy, JAX and modules of this package (tests
 An experiment backend supplies photosensor response, counters/cells, bin edges and numbering,
 any further optical models (optics.register) and the offline table format.
 
-Copied from ``crvfastsim.lookupgen.core`` in RobMina/mu2e-fastsim (see NOTICE). Until mu2e-fastsim
-depends on this package, that tree keeps its own copy; a later extract PR will re-export from here.
+Lineage: ``crvfastsim.lookupgen.core`` in RobMina/mu2e-fastsim (see NOTICE). mu2e-fastsim
+re-exports these modules (PR #326): ``crvfastsim.lookupgen.core.*`` are the same objects.
 """

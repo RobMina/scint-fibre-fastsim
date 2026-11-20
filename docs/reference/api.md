@@ -1,4 +1,4 @@
-# API sketch (0.1.0)
+# API sketch (0.1.3)
 
 ## `scintfibrefastsim.core`
 
@@ -7,12 +7,14 @@
 | `counter.Counter` | Parametric strip + two WLS fibres |
 | `binning.Binning` | Photon-source bins |
 | `optics` / `materials` | Geant4-matched optical building blocks; `current` model |
-| `transport` / `run` | JAX device transport and host driver |
+| `transport` / `run` | JAX device transport and host driver (`stats` includes `package_version`) |
 
 ## `scintfibrefastsim.backends`
 
-- `Arrival`, `PhotosensorBackend`
-- `Mu2eSiPMBackend`, `NovaAPDBackend` (stubs)
+- `Arrival` (pre-PDE optical arrival), `PhotosensorBackend`
+- `Mu2eSiPMBackend`, `SiPMConfigView` (full stand-in for stock `simulate`)
+- `bind_crvfastsim_sipm`, `bind_crvfastsim_sipm_synthetic`, `uniform_photon_map`
+- `NovaAPDBackend` (stub)
 
 ## `scintfibrefastsim.geometry`
 
@@ -20,5 +22,6 @@
 
 ## `scintfibrefastsim.validation`
 
-- `G4ComparePlan`, `compare_plan_crvstandalone()`, `compare_plan_toy()`
-- `run_compare(plan)` — stub
+- `G4ComparePlan`, `CompareReceipt`
+- `compare_plan_crvstandalone()`, `compare_plan_toy()`
+- `run_toy_selfcheck(...)`, `run_compare(..., mode=...)` — modes `auto` / `selfcheck` / `oracle`

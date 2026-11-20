@@ -1,15 +1,15 @@
-# Hardware-agnostic JAX
+# Hardware and JAX backends
 
 Photon transport uses plain JAX/XLA. There is **no** NVIDIA-only (CUDA photon-loop
-or tallymap) hard dependency.
+or tallymap) hard dependency in this repository.
 
-| Backend | Path |
+| Backend | Status in this repo |
 |---|---|
-| NVIDIA | JAX CUDA plugin / cuda12 wheels |
-| AMD | JAX ROCm builds where available |
-| Intel | JAX CPU or XPU/PJRT plugins |
-| CI | JAX CPU only (`.github/workflows/ci.yml`) |
+| CPU (JAX) | **Tested** — GitHub Actions CI |
+| NVIDIA (CUDA) | Intended via JAX CUDA wheels; not recorded in CI here |
+| AMD (ROCm) | Intended where JAX ROCm builds exist; not recorded in CI here |
+| Intel (XPU / CPU) | Intended via JAX CPU or XPU plugins; not recorded in CI here |
 
-Open: exact jax pin matrix for CUDA + ROCm + CPU/XPU in CI (tracked in the wiki
-plan). Prefer dtype-explicit kernels (`float32` / `float64` arguments) over
-global JAX defaults.
+Prefer dtype-explicit kernels (`float32` / `float64` arguments) over global JAX
+defaults. One CI leg pins `jax`/`numpy` to the versions used by mu2e-fastsim so
+transport goldens do not drift silently.

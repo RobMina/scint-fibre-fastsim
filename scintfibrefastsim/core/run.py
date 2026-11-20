@@ -72,11 +72,16 @@ def generate(counter, binning, simtype, bins, nphot, dtype="float64", seed=1, la
             cur = small
             t_compact = time.time() - t0 if t_compact is None else t_compact
     wall = time.time() - t0
+    try:
+        from scintfibrefastsim import __version__ as _pkg_version
+    except Exception:  # pragma: no cover
+        _pkg_version = "unknown"
     return _result(bins, nphot, simtype, s, aux, acc,
                    dict(wall_s=wall, first_call_s=t_first, compact_s=t_compact, calls=n_calls, lanes=lanes,
                         dtype=dtype, seed=int(seed), photons=int(len(bins) * nphot),
                         model=model or T.M.DEFAULT_MODEL,
-                        max_steps=max_steps or (1 << T.STEP_BITS), **device()))
+                        max_steps=max_steps or (1 << T.STEP_BITS),
+                        package_version=str(_pkg_version), **device()))
 
 
 def _result(bins, nphot, simtype, s, aux, acc, extra):

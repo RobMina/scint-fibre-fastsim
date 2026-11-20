@@ -1,17 +1,15 @@
-# Candidate G — parametric CRV module geometry
+# Parametric CRV module geometry
 
-**Mu2eBO CRV-module-geometry-optimization** (sprint G / Candidate G) needs a
-**public** optical model. G1 already uses `crvfastsim.design` (parametric module,
-tilt, scaled-optics yield, P(miss), deadtime, cost). This package supplies the
-optical tables and the parametric strip family those campaigns can cite without
-Mu2e-internal inputs.
+Public optical tables from this package support design campaigns that vary
+scintillator-strip / module parameters (cross-section, fibre layout, tilt) and
+need a Geant4-checked optical model without experiment-internal inputs.
 
 | Piece | Where |
 |---|---|
-| Design knobs (tilt, cost, deadtime) | Mu2eBO / `crvfastsim.design` |
+| Design knobs (geometry, cost proxies, miss probability) | Experiment design tooling (outside this repo) |
 | Public optical generator | **this package** |
-| G4 oracle | Mu2e/CRVStandalone |
-| Second geometry family | NOvA ND cell (TDR caricature) |
+| G4 oracle | [Mu2e/CRVStandalone](https://github.com/Mu2e/CRVStandalone) (via a wrapper; see howto/g4-compare) |
+| Second geometry family | NOvA ND cell caricature (TDR; Phase 2) |
 
-Wiki: `~/ai-config/expdesign/wiki/synthesis/extraction-candidates.md` (row G) and
-`scint-fibre-fastsim.md`.
+The first consumer is the Mu2e CRV fast-sim / design stack; a second geometry
+family targets NOvA ND cells.
