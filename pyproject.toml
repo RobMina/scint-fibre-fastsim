@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scint-fibre-fastsim"
+version = "0.1.0"
+description = "Scintillator + WLS-fibre optical MC and table generator for HEP fast simulation (common interface; Mu2e SiPM and NOvA APD backends)"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+jax = ["jax"]
+test = ["pytest", "jax"]
+
+[project.urls]
+Homepage = "https://github.com/RobMina/scint-fibre-fastsim"
+Repository = "https://github.com/RobMina/scint-fibre-fastsim"
+Issues = "https://github.com/RobMina/scint-fibre-fastsim/issues"
+
+[tool.setuptools.packages.find]
+include = ["scintfibrefastsim*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

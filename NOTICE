@@ -1,0 +1,21 @@
+scint-fibre-fastsim
+Copyright 2026 the Mu2e Genesis team (Mu2e Collaboration)
+
+Licensed under the Apache License, Version 2.0 (LICENSE).
+
+The experiment-neutral optical core (scintfibrefastsim.core: counter, binning, optics,
+materials, transport, run, limits) was copied from crvfastsim.lookupgen.core in
+RobMina/mu2e-fastsim (commit 301a9cd4b0389d46472d8083c031fa796d08d7b0) and remains
+bit-compatible with that tree. Until a later extract PR makes mu2e-fastsim depend on
+this package (shim or re-export), mu2e-fastsim keeps its own copy so flag-off parity is
+unchanged. That core is a JAX port of the table mode of the public Mu2e/CRVStandalone
+optical simulation (Apache-2.0); material tables and Geant4 10.7 optical semantics are
+cited in the module docstrings.
+
+The photosensor backends (Mu2e SiPM, NOvA APD), geometry-family helpers, Geant4
+validation hooks, Diátaxis docs and examples were written for this package.
+
+Cite CRVStandalone and Offline ports when publishing tables derived from this code.
+
+No experiment-internal inputs, conditions, data, libraries or physics results are part
+of this repository.

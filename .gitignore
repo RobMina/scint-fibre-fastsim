@@ -1,0 +1,15 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.so
+.DS_Store
+.venv/
+venv/
+*.npz
+*.root
+.coverage
+htmlcov/
