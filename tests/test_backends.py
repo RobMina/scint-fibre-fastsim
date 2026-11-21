@@ -31,9 +31,12 @@ def test_unbound_sipm_raises() -> None:
         Mu2eSiPMBackend().detect(arrivals)
 
 
-def test_nova_apd_stub_raises() -> None:
-    with pytest.raises(NotImplementedError):
-        NovaAPDBackend().detect([Arrival(time_ns=1.0, channel=0, energy_eV=2.5)])
+def test_nova_apd_detect_returns_per_channel_summary() -> None:
+    arrivals = [Arrival(time_ns=10.0 + 0.1 * i, channel=i % 2, energy_eV=2.4) for i in range(200)]
+    out = NovaAPDBackend(n_channels=3).detect(arrivals, seed=4)
+    assert out["backend"] == "nova_apd"
+    assert list(out["n_photons"]) == [100, 100, 0]
+    assert out["hit"][0] and out["hit"][1] and not out["hit"][2]
 
 
 def test_uniform_photon_map() -> None:

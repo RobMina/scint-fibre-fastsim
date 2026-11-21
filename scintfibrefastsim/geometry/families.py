@@ -1,4 +1,4 @@
-"""Named geometry families over the core ``Counter`` (strip) and a cell stub."""
+"""Named geometry families over the core ``Counter`` (strip) and ``Cell`` (looped-fibre cell)."""
 
 from __future__ import annotations
 
@@ -28,7 +28,8 @@ def strip_family() -> GeometryFamily:
 def cell_tdr_caricature() -> GeometryFamily:
     """Public NOvA ND cell caricature from the TDR (arXiv:1807.02665).
 
-    Internal cross-section 39×66 mm, 0.7 mm looped fibre. Not a private GDML.
+    Internal cross-section 39×66 mm, 0.7 mm looped fibre. Not a private GDML. The concrete
+    parameters are :func:`scintfibrefastsim.geometry.cell.nova_cell_tdr`.
     """
     return GeometryFamily(
         name="nova_cell_tdr",

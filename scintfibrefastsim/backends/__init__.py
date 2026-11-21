@@ -13,7 +13,7 @@ from .mu2e_sipm import (
     bind_crvfastsim_sipm_synthetic,
     uniform_photon_map,
 )
-from .nova_apd import NovaAPDBackend
+from .nova_apd import NOVA_APD, NOVA_ND_READOUT, APDParams, NovaAPDBackend, Readout
 
 __all__ = [
     "Arrival",
@@ -24,4 +24,8 @@ __all__ = [
     "bind_crvfastsim_sipm_synthetic",
     "uniform_photon_map",
     "NovaAPDBackend",
+    "APDParams",
+    "Readout",
+    "NOVA_APD",
+    "NOVA_ND_READOUT",
 ]

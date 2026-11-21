@@ -6,6 +6,6 @@ response and offline table formats live in backends (Mu2e SiPM, NOvA APD).
 
 __version__ = "0.1.5"
 
-from . import backends, core, geometry, validation
+from . import backends, core, geometry, response, validation
 
-__all__ = ["backends", "core", "geometry", "validation", "__version__"]
+__all__ = ["backends", "core", "geometry", "response", "validation", "__version__"]
