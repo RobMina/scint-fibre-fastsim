@@ -87,3 +87,23 @@ def test_validation_runs_and_matches_the_record(tmp_path):
         for w, r in c["workflows"].items():
             for dt in ("float32", "float64"):
                 assert new["configurations"][cn]["workflows"][w][dt]["validity"] == r[dt]["validity"], (cn, w, dt)
+
+
+def test_time_resolution_limits():
+    p = APDParams()
+    pe = np.array([1.0, 12.5, 100.0, 1e6])
+    s = nova_apd.time_resolution(pe, p)
+    assert np.all(np.diff(s) < 0)
+    assert s[-1] == pytest.approx(p.time_floor, rel=1e-3)
+    crb = nova_apd.timing_crb(pe[1:2], p)
+    assert s[1] ** 2 == pytest.approx(crb[0] ** 2 + (p.time_kappa * p.tau_rise) ** 2 / 12.5 + p.time_floor ** 2)
+
+
+def test_sampler_time_spread_is_time_resolution():
+    jax = pytest.importorskip("jax")
+    jnp = jax.numpy
+    p = APDParams()
+    pe = jnp.full((20000,), 200.0, jnp.float32)
+    q, _, t, _ = nova_apd.sample(jax.random.PRNGKey(5), pe, jnp.zeros_like(pe), p)
+    want = float(np.sqrt(np.mean(np.asarray(nova_apd.time_resolution(np.asarray(q, np.float64), p)) ** 2)))
+    assert float(jnp.std(t)) == pytest.approx(want, rel=0.03)

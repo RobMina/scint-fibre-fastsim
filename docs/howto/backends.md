@@ -40,10 +40,16 @@ out = NovaAPDBackend(n_channels=32).detect(arrivals, seed=1)            # Photos
 
 `nova_apd.timing_crb(pe, p, ro)` is the Cramér–Rao bound on the hit time of a joint charge-and-time fit to the
 DCS samples of this front end, with no free parameter.
-- The sampler does not use it: it draws times with `time_res / sqrt(pe)`.
 - Against public NOvA data ([validation/nova_cell](../../validation/nova_cell/README.md)), the bound reproduces
   the measured resolution at 12.5 PE in both detectors, and is about a factor 2 low between 60 and 200 PE.
-- `time_res / sqrt(pe)` is far too optimistic at low charge.
+
+The sampler and the backend draw hit times with `nova_apd.time_resolution(pe, p, ro)`:
+sqrt(timing_crb^2 + (`time_kappa` x `tau_rise`)^2 / pe + `time_floor`^2).
+- The defaults (`time_kappa` 0.449, `time_floor` 6.09 ns) are fitted to public Near Detector data, within about
+  25 % of it from 12 to 400 PE.
+- The same form does not transfer to the Far Detector front end (study T2 in the validation): it is an ND
+  description, not a validated front-end model.
+- This replaces `time_res`, which is removed.
 
 Upstream of the APD, `scintfibrefastsim.response.light(edep, dedx, distance, cell, optics, table=None)` gives
 expected photons at the pixel and their delay for a `Cell` (`geometry.nova_cell_tdr()`), analytic or from a
