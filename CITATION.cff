@@ -4,6 +4,7 @@ type: software
 title: "scint-fibre-fastsim: scintillator and wavelength-shifting fibre optical Monte Carlo for fast detector simulation"
 version: "0.1.6"
 date-released: "2026-11-20"
+doi: "10.5281/zenodo.24418804"
 authors:
   - family-names: Mina
     given-names: Rob
