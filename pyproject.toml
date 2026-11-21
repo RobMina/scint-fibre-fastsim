@@ -14,6 +14,10 @@ dependencies = ["numpy"]
 [project.optional-dependencies]
 jax = ["jax"]
 test = ["pytest", "jax"]
+# validation/nova_cell and benchmarks/nova_cell: the scorer (hep-simbench, pinned) and JAX
+validation = ["jax", "hep-simbench @ git+https://github.com/RobMina/hep-simbench.git@f9663306da82a3943c9c73ec629a5b686747fb28"]
+# validation/nova_cell/extract.py: reading the source PDFs (permissive licences only)
+extract = ["pdfminer.six", "pypdf", "pillow", "scipy"]
 
 [project.urls]
 Homepage = "https://github.com/RobMina/scint-fibre-fastsim"

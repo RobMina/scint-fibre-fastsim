@@ -73,3 +73,25 @@ jobs:
           assert v == z == c, (v, z, c)
           print("version", v)
           PY
+
+  # The NOvA cell model against public data: the record must reproduce, and the benchmark bundle must build.
+  validation-nova-cell:
+    name: NOvA cell validation and benchmark
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e '.[test,validation]'
+      - name: Validation tests (record reproduces)
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m pytest -q tests/test_nova_timing.py
+      - name: Benchmark build (scores, leaderboard, Codabench bundle)
+        run: |
+          python benchmarks/nova_cell/build.py "$RUNNER_TEMP/nova_cell"
+          git diff --exit-code benchmarks/nova_cell/reference_results/LEADERBOARD.md || \
+            (echo "LEADERBOARD.md is stale: rerun benchmarks/nova_cell/build.py" && exit 1)
