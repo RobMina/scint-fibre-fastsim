@@ -39,6 +39,11 @@ python -m pytest -q
 python examples/first_hour.py
 ```
 
+## Citing
+
+Please cite the release you used: `CITATION.cff` holds the metadata (GitHub's "Cite this repository" renders it), and
+each tagged release is archived on Zenodo with its own DOI.
+
 ## Licence
 
 Apache-2.0. Copyright 2026 Rob Mina and contributors. See [NOTICE](NOTICE) for the

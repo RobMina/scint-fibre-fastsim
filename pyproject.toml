@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scint-fibre-fastsim"
-version = "0.1.5"
+version = "0.1.6"
 description = "Experiment-neutral scintillator + WLS-fibre optical Monte Carlo and lookup-table generator for fast detector simulation"
 readme = "README.md"
 license = {text = "Apache-2.0"}
