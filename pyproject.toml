@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scint-fibre-fastsim"
 version = "0.1.5"
-description = "Scintillator + WLS-fibre optical MC and table generator for HEP fast simulation (common interface; Mu2e SiPM and NOvA APD backends)"
+description = "Experiment-neutral scintillator + WLS-fibre optical Monte Carlo and lookup-table generator for fast detector simulation"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"

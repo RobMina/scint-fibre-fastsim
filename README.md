@@ -1,39 +1,35 @@
 # scint-fibre-fastsim
 
-Scintillator + wavelength-shifting fibre optical Monte Carlo and lookup-table
-generation for HEP fast simulation. **Apache-2.0.** Common fibre/WLS interface;
-separate experiment backends (Mu2e SiPM, NOvA APD).
+Scintillator + wavelength-shifting (WLS) fibre optical Monte Carlo and lookup-table
+generation for fast detector simulation. Experiment-neutral: one optical core, a
+common photosensor interface, and parametric geometry. **Apache-2.0.**
 
 | Layer | Role |
 |---|---|
 | `scintfibrefastsim.core` | Strip geometry, bins, Geant4-matched optics, device transport, host driver |
-| `scintfibrefastsim.backends` | Photosensor contract + Mu2e SiPM / NOvA APD |
-| `scintfibrefastsim.geometry` | Geometry families (strip; NOvA TDR cell caricature) |
-| `scintfibrefastsim.validation` | Toy self-check + CRVStandalone compare-plan hooks (wrapper required) |
-
-Not a fork of [lumen](https://github.com/OmarAlterkait/lumen): production tables
-come from this lineage (CRVStandalone + `lookupgen.core`). Docs, examples and
-test depth follow a Diátaxis layout.
+| `scintfibrefastsim.backends` | Photosensor contract (`PhotosensorBackend`) and the backends built on it |
+| `scintfibrefastsim.geometry` | Parametric geometry families (strip, cell) |
+| `scintfibrefastsim.validation` | Toy self-check and Geant4 compare-plan hooks |
 
 ```text
-scint-fibre-fastsim
-  core → tables / toy geometries / G4 compare hooks
+scintfibrefastsim.core  → photon arrivals → tables / toy geometries / G4 compare hooks
         │
-mu2e-fastsim (SiPM; re-exports core)    nova-fastsim (APD; optional pin)
+backends (photosensor response)      downstream fast-simulation packages
 ```
 
-Parametric strip geometry is intended for public CRV-module design studies that
-need optical tables without experiment-internal inputs.
+The parametric strip geometry serves detector-design studies that need optical
+tables without experiment-internal inputs. Documentation and examples follow the
+[Diátaxis](https://diataxis.fr/) layout under [`docs/`](docs/index.md); specific
+backends, geometry families and downstream users are described there.
 
-## Status (0.1.3)
+## Status
 
-- Core used by mu2e-fastsim via re-export ([PR #326](https://github.com/RobMina/mu2e-fastsim/pull/326)).
-- Toy self-check (`run_toy_selfcheck`); CRVStandalone path needs a **wrapper**
-  (`examples/crvstandalone_oracle_wrapper.sh`), not raw `wls`.
-- Mu2e SiPM bind: inject `simulate` + full config, or `bind_crvfastsim_sipm_synthetic()`.
-- Golden regression tests + a CI leg with jax/numpy pinned as in mu2e-fastsim.
-- Device support: **CPU JAX tested in CI**; NVIDIA/AMD/Intel via plain JAX/XLA are
-  intended but not yet recorded in this repository's CI.
+- Optical core with golden regression tests guarding transport outputs for fixed seeds.
+- Toy self-check (`run_toy_selfcheck`); an external Geant4 reference needs a wrapper
+  script ([how-to](docs/howto/g4-compare.md)).
+- Photosensor backends: see [docs/howto/backends.md](docs/howto/backends.md).
+- Device support: **CPU JAX tested in CI**, including a leg with pinned jax/numpy;
+  NVIDIA/AMD/Intel via plain JAX/XLA are intended but not yet recorded in CI.
 
 ## Install and test
 
@@ -45,5 +41,5 @@ python examples/first_hour.py
 
 ## Licence
 
-Apache-2.0. Copyright 2026 Rob Mina and contributors. Cite CRVStandalone / Offline
-ports in NOTICE when publishing derived tables.
+Apache-2.0. Copyright 2026 Rob Mina and contributors. See [NOTICE](NOTICE) for the
+provenance of ported code and what to cite when publishing derived tables.

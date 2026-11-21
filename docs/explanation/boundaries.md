@@ -10,6 +10,24 @@
 ([PR #326](https://github.com/RobMina/mu2e-fastsim/pull/326)): the module objects are
 shared. Experiment adapters keep offline table formats and Mu2e-tuned optical models.
 
+## Downstream packages
+
+```text
+scint-fibre-fastsim
+  core → tables / toy geometries / G4 compare hooks
+        │
+mu2e-fastsim (SiPM; re-exports core)    nova-fastsim (APD; optional pin)
+```
+
+| Backend | Status |
+|---|---|
+| Mu2e SiPM (`Mu2eSiPMBackend`) | bind by injecting `simulate` + full config, or `bind_crvfastsim_sipm_synthetic()` ([how-to](../howto/backends.md)) |
+| NOvA APD (`NovaAPDBackend`) | Phase-2 stub; the NOvA ND cell caricature geometry is from the public TDR |
+
+The Geant4 reference used for the optical core is the public
+[Mu2e/CRVStandalone](https://github.com/Mu2e/CRVStandalone) table mode, run through
+`examples/crvstandalone_oracle_wrapper.sh` (not the raw `wls` binary).
+
 ## Public hygiene
 
 This repository is public. Do **not** put private wiki paths, home-directory paths, or

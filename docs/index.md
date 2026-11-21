@@ -1,7 +1,6 @@
 # scint-fibre-fastsim documentation
 
-The documentation follows the [Diátaxis](https://diataxis.fr/) layout (same
-structure as lumen; this package is **not** a lumen fork):
+The documentation follows the [Diátaxis](https://diataxis.fr/) layout:
 
 - **Tutorial** (learning by doing): [the first hour](tutorial/first-hour.md), on
   the toy strip in `examples/`.
