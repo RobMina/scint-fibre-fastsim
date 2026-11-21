@@ -1,5 +1,7 @@
 # scint-fibre-fastsim
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24418804.svg)](https://doi.org/10.5281/zenodo.24418804)
+
 Scintillator + wavelength-shifting (WLS) fibre optical Monte Carlo and lookup-table
 generation for fast detector simulation. Experiment-neutral: one optical core, a
 common photosensor interface, and parametric geometry. **Apache-2.0.**
@@ -50,7 +52,8 @@ python examples/first_hour.py
 ## Citing
 
 Please cite the release you used: `CITATION.cff` holds the metadata (GitHub's "Cite this repository" renders it), and
-each tagged release is archived on Zenodo with its own DOI.
+each tagged release is archived on Zenodo with its own DOI. The concept DOI
+[10.5281/zenodo.24418804](https://doi.org/10.5281/zenodo.24418804) covers every version and resolves to the latest one.
 
 ## Licence
 
