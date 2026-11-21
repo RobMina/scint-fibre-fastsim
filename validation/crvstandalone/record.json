@@ -1,0 +1,323 @@
+{
+ "criteria_sha256": "42dc0f6b63386c875e2bdfa608ab5340064dc8bec8b3fa2550c8dc4e389df94b",
+ "plan": {
+  "length": 3200.0,
+  "reflector": 0,
+  "seed": 20261121,
+  "simtypes": {
+   "0": {
+    "n_bins": 22960,
+    "bins": [
+     0,
+     349,
+     1451,
+     3033,
+     6374,
+     6578,
+     6831,
+     8402,
+     11698,
+     12154,
+     12452,
+     13328,
+     14615,
+     16219,
+     16752,
+     17842,
+     18630,
+     20757,
+     22075,
+     22160,
+     22596
+    ],
+    "photons": 100000
+   },
+   "1": {
+    "n_bins": 114800,
+    "bins": [
+     93,
+     1174,
+     4522,
+     16461,
+     24535,
+     25087,
+     30513,
+     31002,
+     32922,
+     42800,
+     43698,
+     63534,
+     66557,
+     68989,
+     75635,
+     76687,
+     82921,
+     96756,
+     98294,
+     103178
+    ],
+    "photons": 100000
+   },
+   "2": {
+    "n_bins": 77000,
+    "bins": [
+     11823,
+     12106,
+     18709,
+     19401,
+     20302,
+     20357,
+     22203,
+     26262,
+     26819,
+     28461,
+     32136,
+     33882,
+     40171,
+     46432,
+     46879,
+     52030,
+     53907,
+     53990,
+     68665,
+     71900
+    ],
+    "photons": 10000
+   }
+  }
+ },
+ "simtypes": {
+  "scintillation": {
+   "missing_pieces": [],
+   "dtypes": {
+    "float64": {
+     "bins": 21,
+     "nphot": 30000,
+     "nphot_ref": 100000,
+     "prob_pull": {
+      "n": 20,
+      "mean": 0.09692892417804415,
+      "mean_err": 0.2125615746584967,
+      "rms": 0.9506042606815907,
+      "frac_gt3": 0.0
+     },
+     "prob_ratio_weighted": 1.0403332876445222,
+     "prob_ratio_err": 0.05721295676906231,
+     "time_mean_pull": {
+      "n": 14,
+      "mean": -0.718861156003879,
+      "mean_err": 0.2722933805033719,
+      "rms": 1.0188285385300888,
+      "frac_gt3": 0.07142857142857142
+     },
+     "emis_mean_pull": {
+      "n": 14,
+      "mean": -0.012147747470506934,
+      "mean_err": 0.19078432726374153,
+      "rms": 0.7138495873870756,
+      "frac_gt3": 0.0
+     },
+     "verdict": {
+      "prob_pull": true,
+      "time_mean_pull": true,
+      "emis_mean_pull": true,
+      "prob_ratio": true
+     }
+    },
+    "float32": {
+     "bins": 21,
+     "nphot": 30000,
+     "nphot_ref": 100000,
+     "prob_pull": {
+      "n": 20,
+      "mean": -0.07561444407068535,
+      "mean_err": 0.19974339384845738,
+      "rms": 0.8932796134033281,
+      "frac_gt3": 0.0
+     },
+     "prob_ratio_weighted": 1.0096851870784578,
+     "prob_ratio_err": 0.05807479041390409,
+     "time_mean_pull": {
+      "n": 12,
+      "mean": -0.5723105064049161,
+      "mean_err": 0.20233902037437432,
+      "rms": 0.7009229272842611,
+      "frac_gt3": 0.0
+     },
+     "emis_mean_pull": {
+      "n": 12,
+      "mean": 0.4371018323765621,
+      "mean_err": 0.22010910634773462,
+      "rms": 0.7624803108057152,
+      "frac_gt3": 0.0
+     },
+     "verdict": {
+      "prob_pull": true,
+      "time_mean_pull": true,
+      "emis_mean_pull": true,
+      "prob_ratio": true
+     }
+    }
+   },
+   "dtype_agreement": true
+  },
+  "Cerenkov in the scintillator": {
+   "missing_pieces": [],
+   "dtypes": {
+    "float64": {
+     "bins": 20,
+     "nphot": 30000,
+     "nphot_ref": 100000,
+     "prob_pull": {
+      "n": 19,
+      "mean": 0.2650233154836559,
+      "mean_err": 0.2345487099980833,
+      "rms": 1.0223741242194733,
+      "frac_gt3": 0.0
+     },
+     "prob_ratio_weighted": 1.1069657577504868,
+     "prob_ratio_err": 0.07254762501100116,
+     "time_mean_pull": {
+      "n": 8,
+      "mean": -0.026253057098122534,
+      "mean_err": 0.35041837649873037,
+      "rms": 0.991132841098532,
+      "frac_gt3": 0.0
+     },
+     "emis_mean_pull": {
+      "n": 8,
+      "mean": 0.8315973092957615,
+      "mean_err": 0.4324904896844724,
+      "rms": 1.2232678322183241,
+      "frac_gt3": 0.125
+     },
+     "verdict": {
+      "prob_pull": true,
+      "time_mean_pull": true,
+      "emis_mean_pull": true,
+      "prob_ratio": true
+     }
+    },
+    "float32": {
+     "bins": 20,
+     "nphot": 30000,
+     "nphot_ref": 100000,
+     "prob_pull": {
+      "n": 19,
+      "mean": 0.3292193191719681,
+      "mean_err": 0.21636045119601224,
+      "rms": 0.9430933421422814,
+      "frac_gt3": 0.0
+     },
+     "prob_ratio_weighted": 1.1360964397635283,
+     "prob_ratio_err": 0.07161148740394328,
+     "time_mean_pull": {
+      "n": 9,
+      "mean": 0.5436522665449619,
+      "mean_err": 0.42266338548174226,
+      "rms": 1.2679901564452267,
+      "frac_gt3": 0.0
+     },
+     "emis_mean_pull": {
+      "n": 9,
+      "mean": 0.827369182963221,
+      "mean_err": 0.4757409467939957,
+      "rms": 1.427222840381987,
+      "frac_gt3": 0.1111111111111111
+     },
+     "verdict": {
+      "prob_pull": true,
+      "time_mean_pull": true,
+      "emis_mean_pull": true,
+      "prob_ratio": true
+     }
+    }
+   },
+   "dtype_agreement": true
+  },
+  "Cerenkov in the fibre": {
+   "missing_pieces": [],
+   "dtypes": {
+    "float64": {
+     "bins": 20,
+     "nphot": 3000,
+     "nphot_ref": 10000,
+     "prob_pull": {
+      "n": 10,
+      "mean": -0.19692166759470914,
+      "mean_err": 0.29493566859793413,
+      "rms": 0.9326684759940718,
+      "frac_gt3": 0.0
+     },
+     "prob_ratio_weighted": 1.0416666634455396,
+     "prob_ratio_err": 0.3651483716701107,
+     "time_mean_pull": {
+      "n": 0
+     },
+     "emis_mean_pull": {
+      "n": 0
+     },
+     "verdict": {
+      "prob_pull": true,
+      "time_mean_pull": null,
+      "emis_mean_pull": null,
+      "prob_ratio": true
+     }
+    },
+    "float32": {
+     "bins": 20,
+     "nphot": 3000,
+     "nphot_ref": 10000,
+     "prob_pull": {
+      "n": 10,
+      "mean": -0.056695730088430915,
+      "mean_err": 0.2659918714065492,
+      "rms": 0.8411401527353107,
+      "frac_gt3": 0.0
+     },
+     "prob_ratio_weighted": 1.2500000034106051,
+     "prob_ratio_err": 0.3333333333333333,
+     "time_mean_pull": {
+      "n": 0
+     },
+     "emis_mean_pull": {
+      "n": 0
+     },
+     "verdict": {
+      "prob_pull": true,
+      "time_mean_pull": null,
+      "emis_mean_pull": null,
+      "prob_ratio": true
+     }
+    }
+   },
+   "dtype_agreement": true
+  }
+ },
+ "header": {
+  "reflector": true,
+  "constants": true,
+  "edges": true,
+  "constants_piece": [
+   9.64,
+   25.42,
+   1600.0,
+   26.0,
+   2.0,
+   1.0,
+   0.7,
+   1.75
+  ],
+  "constants_ours": [
+   9.64,
+   25.42,
+   1600.0,
+   26.0,
+   2.0,
+   1.0,
+   0.7,
+   1.75
+  ]
+ },
+ "all_pass": true
+}
