@@ -21,7 +21,8 @@ VAL = HERE.parents[1] / "validation" / "nova_cell"
 REFERENCE_SOLUTION = "C_frontend_timing"
 NAMES = {"A_defaults": "Weak baseline A: package defaults, nothing fitted",
          "B_train_fit": "Baseline B: optics fitted on the train split; timing time_res / sqrt(PE)",
-         "C_frontend_timing": "**Reference solution C**: B with the front-end timing bound plus a fitted floor"}
+         "C_frontend_timing": "**Reference solution C**: B with the front-end timing bound plus a fitted floor",
+         "E1_multipoint": "E1: B with an emulation of the multi-point readout fit plus a fitted floor (study T3)"}
 WORKFLOWS = ("NC-TB", "NC-FIBRE", "NC-FD", "NC-TND", "NC-TFD")
 
 

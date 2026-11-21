@@ -334,6 +334,119 @@ def aurisano_fibre(pdf, overlay=None) -> dict:
     }
 
 
+def pershey_nd_attenuation(pdf, overlay=None, bin_cm=10.0) -> dict:
+    """Pershey thesis Fig. 7.4 (left): mean PE/cm of cosmic-ray muon hits against W in one Near Detector cell, with
+    the thesis' attenuation fit (red) and LOWESS curve (blue). Raster; the black "+" markers (about 5 cm apart) are
+    read as a band (median black row per pixel column, red and blue pixels excluded), averaged in ``bin_cm`` bins."""
+    im = _page_image(pdf, 81, 0)[:, :930]                                     # the left panel
+    black = im.sum(-1) < 200
+    L, R, T, B = _frame(black)
+    tx, ty = _ticks(im.sum(-1) < 600, L, R, T, B, "x"), _ticks(im.sum(-1) < 600, L, R, T, B, "y")
+    x_major = list(range(-200, 201, 50))
+    y_major = [140, 120, 100, 80, 60, 40, 20]
+    assert len(tx) == len(x_major) and len(ty) == len(y_major), (tx, ty)
+    kx, cx0 = _axis(tx, x_major)
+    ky, cy0 = _axis(ty, y_major)
+    colour = (np.abs(im[..., 0] - im[..., 2]) > 80)                            # red or blue curve pixels
+    rows_ok = slice(int(round((60 - cy0) / ky)), int(round((20 - cy0) / ky)))  # 20-60 PE/cm
+    cols, rows = [], []
+    for c in range(L + 12, R - 2):
+        x = kx * c + cx0
+        if abs(abs(x) - 200.0) < 3.0:                                          # the dashed cell-end lines
+            continue
+        r = np.where(black[rows_ok, c] & ~colour[rows_ok, c])[0]
+        if len(r):
+            cols.append(c)
+            rows.append(rows_ok.start + np.median(r))
+    xc = kx * np.array(cols, float) + cx0
+    yc = ky * np.array(rows) + cy0
+    edges = np.arange(-150.0, 150.0 + 1e-9, bin_cm)
+    xs, ys, sd, n = [], [], [], []
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        s = (xc >= lo) & (xc < hi)
+        if s.sum() >= 3:
+            xs.append((lo + hi) / 2)
+            ys.append(float(np.mean(yc[s])))
+            sd.append(float(np.std(yc[s], ddof=1)))
+            n.append(int(s.sum()))
+    red = (im[..., 0] > 180) & (im[..., 1] < 90) & (im[..., 2] < 90)
+    fx, fy = [], []
+    for c in range(L + 3, R - 2):
+        r = np.where(red[T + 3:B - 2, c])[0]
+        if len(r):
+            fx.append(kx * c + cx0)
+            fy.append(ky * (T + 3 + r.mean()) + cy0)
+    if overlay is not None:
+        from PIL import Image, ImageDraw
+        img = Image.fromarray(im.astype(np.uint8))
+        d = ImageDraw.Draw(img)
+        for a, b in zip(cols, rows):
+            d.point((a, b), fill=(0, 200, 0))
+        for a, b in zip(xs, ys):
+            px, py = (a - cx0) / kx, (b - cy0) / ky
+            d.rectangle([px - 3, py - 3, px + 3, py + 3], outline=(255, 140, 0))
+        img.resize((img.width * 2, img.height * 2)).save(overlay)
+    return {
+        "reference": "R6", "source": "pershey", "figure": "Fig. 7.4, left (PDF page 81, thesis page 66)",
+        "method": "raster (band)",
+        "what": "mean response (PE/cm) of cosmic-ray muon hits against distance from the cell centre, one Near "
+                "Detector cell; readout at +W (the response rises toward +W); the thesis fits its attenuation form "
+                "for |W| < 150 cm; red: that fit",
+        "cell_length_cm": 390.0, "readout_at": "+x", "bin_cm": bin_cm,
+        "x_cm": xs, "pe_per_cm": [round(v, 4) for v in ys], "column_sd": [round(v, 4) for v in sd], "columns": n,
+        "digitisation_error": {"x": round(abs(kx) / 2, 4), "y": round(abs(ky) / 2, 4)},
+        "fit_attenuation": {"x_cm": np.round(fx, 3).tolist(), "pe_per_cm": np.round(fy, 4).tolist()},
+        "calibration": f"left panel cols {L}-{R}, rows {T}-{B}; major ticks x {np.round(tx, 1).tolist()} -> {x_major}, "
+                       f"y {np.round(ty, 1).tolist()} -> {y_major}; per column the median black row in 20-60 PE/cm "
+                       f"(red/blue excluded, dashed lines skipped), averaged in {bin_cm:g} cm bins",
+        "image": f"page 81, image 0 (left 930 px of {_page_image(pdf, 81, 0).shape[1]})",
+    }
+
+
+def pershey_fd_simulation(pdf) -> dict:
+    """Pershey thesis Fig. 7.5: NOvA simulation, Far Detector Y view, mean reconstructed / true energy against W
+    before (red) and after (blue) the attenuation calibration. Vector: the filled markers are read exactly."""
+    from pdfminer.high_level import extract_pages
+    from pdfminer.layout import LTCurve, LTLine, LTRect
+
+    objs = list(_walk(next(extract_pages(str(pdf), page_numbers=[80]))))
+    frame = [o for o in objs if isinstance(o, LTRect) and _color(o) == (0.0, 0.0, 0.0) and o.width > 150]
+    x0, y0, x1, y1 = frame[0].bbox
+    lines = [o for o in objs if isinstance(o, LTLine) and _color(o) == (0.0, 0.0, 0.0)]
+    # x majors: vertical ticks on the bottom edge, the long ones; y majors: horizontal ticks on the left edge
+    xt = sorted({round(o.pts[0][0], 3) for o in lines if o.pts[0][0] == o.pts[1][0]
+                 and abs(min(o.pts[0][1], o.pts[1][1]) - y0) < 0.05 and 4 < abs(o.pts[0][1] - o.pts[1][1]) < 10
+                 and x0 + 0.1 < o.pts[0][0] < x1 - 0.1})
+    yt = sorted({round(o.pts[0][1], 3) for o in lines if o.pts[0][1] == o.pts[1][1]
+                 and abs(min(o.pts[0][0], o.pts[1][0]) - x0) < 0.05 and 4 < abs(o.pts[0][0] - o.pts[1][0]) < 10})
+    assert len(xt) == 3, xt
+    kx, cx = np.polyfit(xt, [-500.0, 0.0, 500.0], 1)
+    ky, cy = np.polyfit(yt, np.arange(len(yt), dtype=float), 1)                 # majors at 0, 1, 2, 3
+    out = {}
+    for name, col in (("uncalibrated", (1.0, 0.0, 0.0)), ("calibrated", (0.0, 0.0, 1.0))):
+        pts = []
+        for o in objs:
+            if isinstance(o, LTCurve) and not isinstance(o, (LTLine, LTRect)) and o.fill:
+                c = o.non_stroking_color
+                c = tuple(round(float(v), 3) for v in c) if isinstance(c, (tuple, list)) else c
+                xm, ym = (o.x0 + o.x1) / 2, (o.y0 + o.y1) / 2
+                w = kx * xm + cx
+                on_grid = abs((w + 776.0) / 16.0 - round((w + 776.0) / 16.0)) < 0.01   # the legend sample is off it
+                if c == col and x0 < xm < x1 and y0 < ym < y1 and on_grid:
+                    pts.append((w, ky * ym + cy))
+        pts.sort()
+        out[name] = {"w_cm": [round(p[0], 3) for p in pts], "ratio": [round(p[1], 5) for p in pts]}
+    return {
+        "reference": "R7", "source": "pershey", "figure": "Fig. 7.5 (PDF page 81, thesis page 66)", "method": "vector",
+        "what": "NOvA simulation, Far Detector Y view, true deposits > 15 MeV: mean reconstructed / true energy against "
+                "W before (uncalibrated: the simulated attenuation, a factor of six along the cell) and after the "
+                "attenuation calibration; readout at +W",
+        "cell_length_cm": 1500.0, "readout_at": "+x", **out,
+        "calibration": f"x from the major ticks {xt} -> -500, 0, 500 cm; y from {len(yt)} major ticks -> 0, 1, ...; "
+                       "markers on the 16 cm bin grid (the legend sample, off it, dropped)",
+    }
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("src", type=Path)
@@ -358,12 +471,14 @@ def main(argv=None) -> int:
         "r4_fibre": aurisano_fibre(path["simchain"], ov("r4.png")),
         "r5_timing_nd": niner_timing(path["niner"], "nd", ov("r5nd.png")),
         "r5_timing_fd": niner_timing(path["niner"], "fd", ov("r5fd.png")),
+        "r6_nd_cell": pershey_nd_attenuation(path["pershey"], ov("r6.png")),
+        "r7_fd_simulation": pershey_fd_simulation(path["pershey"]),
     }
     for name, d in out.items():
         d["cite"] = src[d["source"]]["cite"]
         d["source_sha256"] = src[d["source"]]["sha256"]
         (a.out / f"{name}.json").write_text(json.dumps(d, indent=1) + "\n")
-        n = len(d.get("x_cm") or d.get("x_m") or d.get("pe"))
+        n = len(d.get("x_cm") or d.get("x_m") or d.get("pe") or d["uncalibrated"]["w_cm"])
         print(f"{name:18s} {d['figure']:42s} {d['method']:6s} {n:4d} points")
     return 0
 

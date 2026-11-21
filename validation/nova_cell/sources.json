@@ -13,6 +13,12 @@
       "sha256": "cea79940cc2323471bfba2c7dd377b66ed9f92ee3ae17598536dc99b920f4f0f",
       "cite": "E. Niner, PhD thesis, Indiana University (2015), FERMILAB-THESIS (public on INSPIRE)"
     },
+    "pershey": {
+      "file": "pershey_thesis_2018.pdf",
+      "url": "https://inspirehep.net/files/ac1e8a353dcba300201af735e28df704",
+      "sha256": "a194ef6aae25bb786492784a77ddddd5d934d42de26294504cf3dd8b3b3cf666",
+      "cite": "D. Pershey, PhD thesis, California Institute of Technology (2018), FERMILAB-THESIS-2018-17 (public on INSPIRE)"
+    },
     "simchain": {
       "file": "aurisano_chep2015.pdf",
       "url": "https://www.osti.gov/servlets/purl/1250781",

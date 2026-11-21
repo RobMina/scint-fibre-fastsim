@@ -206,7 +206,108 @@ def fit_floor(pe, y, which, apd):
 
 # ------------------------------------------------------------------------------------------- arms
 
-def configurations(tasks):
+# ------------------------------------------------------------------------------------------- study T3 and O2
+
+MP_TRIALS, MP_SEED, MP_SAMPLES, MP_START = 20000, 11, 24, 6
+
+
+def _multipoint_bin(Q, which, apd: APDParams, dtype, b):
+    """One 25 PE bin of the multi-point emulation (study2_criteria.json, T3): time errors of the fitted hits.
+    The random numbers are drawn once in float64 (NumPy, fixed seed per bin) and cast, so both floats see the same
+    noise."""
+    ro, shaping = READOUT[which]
+    p = _cast(apd._replace(**shaping), dtype)
+    tick, lag, n, K = ro.tick, ro.dcs_lag, MP_TRIALS, MP_SAMPLES
+    rng = np.random.default_rng([MP_SEED, b, 0 if which == "nd" else 1])
+    phase = jnp.asarray(rng.uniform(0.0, tick, n), dtype)
+    noise = jnp.asarray(rng.normal(size=(n, K)), dtype)
+    t0 = MP_START * tick + phase
+    tk = jnp.arange(K, dtype=dtype) * tick
+    v = jnp.asarray(Q, dtype) * nova_apd.pulse(tk[None, :] - t0[:, None], p) + p.noise_pe * noise
+    over = (v[:, lag:] - v[:, :-lag]) > p.threshold_pe
+    has = over.any(axis=1)
+    i = jnp.argmax(over, axis=1) + lag                                        # the trigger sample
+    idx = jnp.clip(i[:, None] + jnp.arange(-3, 1)[None, :], 0, K - 1)
+    vs, ts = jnp.take_along_axis(v, idx, axis=1), tk[idx]
+    q, dt_acc = jnp.full((n,), Q, dtype), jnp.zeros((n,), dtype)          # time kept as an offset from the truth
+    tau0 = ts - t0[:, None]
+    for _ in range(10):                                                       # Gauss-Newton from the truth
+        tau = tau0 - dt_acc[:, None]
+        f = nova_apd.pulse(tau, p)
+        g = -q[:, None] * nova_apd.pulse_slope(tau, p)
+        r = vs - q[:, None] * f
+        nf = jnp.sqrt((f * f).sum(1)) + 1e-30                                 # unit columns: a well-scaled 2 x 2 solve
+        ng = jnp.sqrt((g * g).sum(1)) + 1e-30
+        fu, gu = f / nf[:, None], g / ng[:, None]
+        c = (fu * gu).sum(1)
+        b1, b2 = (fu * r).sum(1), (gu * r).sum(1)
+        det = 1.0 - c * c
+        ok = det > 1e-6
+        dq = jnp.where(ok, (b1 - c * b2) / jnp.where(ok, det, 1.0), 0.0) / nf
+        dt = jnp.where(ok, (b2 - c * b1) / jnp.where(ok, det, 1.0), 0.0) / ng
+        q, dt_acc = q + dq, dt_acc + jnp.clip(dt, -tick, tick)
+    err = np.asarray(dt_acc, np.float64)[np.asarray(has)]
+    return err[np.isfinite(err)]
+
+
+def multipoint_sigma(pe, which, apd: APDParams, dtype) -> np.ndarray:
+    """T3: the 1 %-truncated rms of the emulated multi-point hit-time error at each charge in ``pe``."""
+    out = []
+    for Q in np.asarray(pe, float):
+        e = _multipoint_bin(float(Q), which, apd, dtype, int(round((Q - 12.5) / 25.0)))
+        lo, hi = np.quantile(e, [0.01, 0.99])
+        out.append(float(np.std(e[(e >= lo) & (e <= hi)])))
+    return np.array(out)
+
+
+_MP_CACHE: dict = {}
+
+
+def multipoint_cached(pe, which, apd, dtype):
+    key = (tuple(np.round(np.asarray(pe, float), 3)), which, tuple(apd), str(jnp.dtype(dtype)))
+    if key not in _MP_CACHE:
+        _MP_CACHE[key] = multipoint_sigma(pe, which, apd, dtype)
+    return _MP_CACHE[key]
+
+
+def fit_mp_floors(tasks, apd) -> dict:
+    """T3: the constant floor per detector on the sigma_high histogram (float64 emulation)."""
+    cen = lambda h: 0.5 * (np.array(h["edges"][:-1]) + np.array(h["edges"][1:]))
+    out = {}
+    for which, w in (("nd", "NC-TND"), ("fd", "NC-TFD")):
+        h = tasks[w]["stock"]["hists"]["sigma_high"]
+        mc = multipoint_cached(cen(h), which, apd, jnp.float64)
+        y = np.array(h["values"])
+        grid = np.linspace(0.0, 30.0, 30001)
+        chi = [np.sum((np.sqrt(mc ** 2 + f ** 2) - y) ** 2) for f in grid[::30]]
+        f0 = grid[::30][int(np.argmin(chi))]
+        fine = np.linspace(max(f0 - 0.03, 0.0), f0 + 0.03, 601)
+        out[which] = float(fine[int(np.argmin([np.sum((np.sqrt(mc ** 2 + f ** 2) - y) ** 2) for f in fine]))])
+    return out
+
+
+def fit_o2(tasks, extra) -> dict:
+    """O2: the attenuation fitted to the Test Beam and Near Detector cells, a free normalisation per cell."""
+    def parts(q):
+        f, a_s, a_l = 1 / (1 + np.exp(-q[0])), np.exp(q[1]), np.exp(q[2])
+        opt = CellOptics()._replace(frac_short=f, atten_short=a_s, atten_long=a_l, yield_per_mev=1.0)
+        out = {}
+        for w, t, x in (("NC-TB", tasks["NC-TB"], None), ("NC-ND", extra["NC-ND"], extra["NC-ND"]["centres"])):
+            h, cfg = t["stock"]["hists"]["pe_per_cm"], t["cfg"]
+            x = 0.5 * (np.array(h["edges"][:-1]) + np.array(h["edges"][1:])) if x is None else np.asarray(x)
+            y, e = np.array(h["values"]), np.array(h["errors"])
+            m = np.asarray(pe_per_cm(x, cfg["cell_length_mm"], cfg["dedx_mev_per_cm"], opt, APDParams(), jnp.float64))
+            k = np.sum(m * y / e ** 2) / np.sum(m * m / e ** 2)
+            out[w] = ((k * m - y) / e, float(k))
+        return out
+    q, r = _gn(lambda q: np.concatenate([v[0] for v in parts(q).values()]), [0.0, np.log(2000.0), np.log(9000.0)], 300)
+    pp = parts(q)
+    return {"frac_short": float(1 / (1 + np.exp(-q[0]))), "atten_short": float(np.exp(q[1])),
+            "atten_long": float(np.exp(q[2])), "yield_tb": pp["NC-TB"][1], "yield_nd": pp["NC-ND"][1],
+            "chi2ndf": {w: float(np.sum(v[0] ** 2) / len(v[0])) for w, v in pp.items()}}
+
+
+def configurations(tasks, extra=None):
     opt0, apd0 = CellOptics(), APDParams()
     st = lambda w, h: tasks[w]["stock"]["hists"][h]
     cen = lambda h: 0.5 * (np.array(h["edges"][:-1]) + np.array(h["edges"][1:]))
@@ -235,7 +336,18 @@ def configurations(tasks):
         "C_frontend_timing": {"optics": optB, "apd": apd0, "offset": fib["offset"], "timing": ("crb", floors)},
         "D_timing_t2": {"optics": optB, "apd": apd0, "offset": fib["offset"], "timing": ("t2", fit_t2(tasks, apd0)),
                         "note": "study T2; uses NC-TND sigma_low, so not a NOVA-CELL submission"},
+        "E1_multipoint": {"optics": optB, "apd": apd0, "offset": fib["offset"], "timing": ("mp", fit_mp_floors(tasks, apd0)),
+                          "note": "study T3; a NOVA-CELL submission (train split only)"},
+        **({} if extra is None else {"E2_incell_multipoint": _e2(tasks, extra, opt0, apd0, fib)}),
     }
+
+
+def _e2(tasks, extra, opt0, apd0, fib):
+    o2 = fit_o2(tasks, extra)
+    opt = opt0._replace(frac_short=o2["frac_short"], atten_short=o2["atten_short"], atten_long=o2["atten_long"],
+                        yield_per_mev=o2["yield_tb"])
+    return {"optics": opt, "apd": apd0, "offset": fib["offset"], "timing": ("mp", fit_mp_floors(tasks, apd0)),
+            "o2_fit": o2, "note": "studies O2 + T3; uses R6 (outside the NOVA-CELL dataset): validation only"}
 
 
 def arm_hists(tasks, conf, dtype) -> dict:
@@ -271,10 +383,26 @@ def arm_hists(tasks, conf, dtype) -> dict:
                 v = sigma_sqrt(x, par[which], dt)
             elif kind == "crb":
                 v = sigma_crb(x, which, par[which], apd, dt)
-            else:
+            elif kind == "t2":
                 v = sigma_t2(x, which, par["kappa"], par["floors"][which], apd, dt, par["scale"])
+            else:
+                v = np.sqrt(multipoint_cached(x, which, apd, dt) ** 2 + par[which] ** 2)
             hs[name] = H(h, v)
         out[w] = {"hists": hs}
+    return out
+
+
+def extra_hists(extra, conf, dtype) -> dict:
+    """The validation-only workflows (O2): shapes with a free normalisation (weighted least squares)."""
+    dt = jnp.dtype(dtype)
+    out = {}
+    for w, key in (("NC-ND", "pe_per_cm"), ("NC-FDSIM", "ratio")):
+        t = extra[w]
+        h, x = t["stock"]["hists"][key], np.asarray(t["centres"], float)
+        m = np.asarray(pe_per_cm(x, t["cfg"]["cell_length_mm"], 1.8, conf["optics"], conf["apd"], dt), np.float64)
+        y, e = np.array(h["values"]), np.array(h["errors"])
+        k = np.sum(m * y / e ** 2) / np.sum(m * m / e ** 2)
+        out[w] = {"hists": {key: {"edges": h["edges"], "values": (k * m).tolist(), "errors": [0.0] * len(y)}}}
     return out
 
 
@@ -302,9 +430,11 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     ref = a.out / "reference"
     tasks = REF.write(ref)
-    confs = configurations(tasks)
+    extra = REF.write(a.out / "reference_extra", REF.build_extra())
+    confs = configurations(tasks, extra)
     record = {"criteria_sha256": _sha(HERE / "criteria.json"),
               "timing_criteria_sha256": _sha(HERE / "timing_criteria.json"),
+              "study2_criteria_sha256": _sha(HERE / "study2_criteria.json"),
               "data_sha256": {p.name: _sha(p) for p in sorted((HERE / "data").glob("*.json"))},
               "scint_fibre_fastsim": _commit(), "hep_simbench": getattr(hepsimbench, "__version__", None),
               "empirical_errors": {w: t["cfg"].get("empirical_error", t["cfg"].get("empirical_errors"))
@@ -335,13 +465,26 @@ def main(argv=None) -> int:
                       for dt, r in wr.items()}
         kind = conf["timing"][0]
         par = {"optics": conf["optics"]._asdict(), "fibre_offset": conf["offset"], "timing": {
-            "model": kind, {"sqrt": "time_res", "crb": "time_floor", "t2": "fit"}[kind]: conf["timing"][1]}}
+            "model": kind, {"sqrt": "time_res", "crb": "time_floor", "t2": "fit", "mp": "time_floor"}[kind]: conf["timing"][1]}}
+        if "o2_fit" in conf:
+            par["o2_fit"] = conf["o2_fit"]
         if "note" in conf:
             par["note"] = conf["note"]
         if "fibre_fit" in conf:
             par["fibre_fit"] = conf["fibre_fit"]
         record["configurations"][name] = {"parameters": par, "validity_mean": res["validity_score"],
                                           "max_rel_dtype_diff": worst, "workflows": per}
+        if name.startswith("E"):
+            for dt in DTYPES:
+                for w, hj in extra_hists(extra, conf, dt).items():
+                    d = a.out / "submissions_extra" / name / w / dt
+                    d.mkdir(parents=True, exist_ok=True)
+                    (d / "hists.json").write_text(json.dumps(hj, indent=1))
+            rx = score(a.out / "submissions_extra" / name, a.out / "reference_extra")
+            record["configurations"][name]["extra_workflows"] = {
+                w: {dt: {"validity": r["validity"], "hists": {h["hist"]: {k: h[k] for k in ("chi2ndf", "ndf", "p", "threshold", "flag")}
+                                                              for h in r["hists"]}} for dt, r in wr.items()}
+                for w, wr in rx["workflows"].items()}
 
     def unflagged(cn, w, hist=None):
         return all(not v["flag"] for dt in DTYPES for k, v in record["configurations"][cn]["workflows"][w][dt]["hists"].items()
@@ -351,6 +494,7 @@ def main(argv=None) -> int:
         return all(v["pass"] for dt in DTYPES for v in record["configurations"][cn]["workflows"][w][dt]["yields"].values())
 
     B, C, D = "B_train_fit", "C_frontend_timing", "D_timing_t2"
+    E1, E2 = "E1_multipoint", "E2_incell_multipoint"
     record["post_hoc"] = post_hoc(tasks, confs[C]["timing"][1])
     var = fit_t2(tasks, APDParams(), "tick")                       # descriptive only (timing_criteria.json)
     hl = tasks["NC-TFD"]["stock"]["hists"]["sigma_low"]
@@ -358,15 +502,31 @@ def main(argv=None) -> int:
     pr = np.asarray(sigma_t2(xl, "fd", var["kappa"], var["floors"]["fd"], APDParams(), jnp.float64, "tick"))
     var["fd_low_chi2ndf"] = float(np.mean(((pr - np.array(hl["values"])) / np.array(hl["errors"])) ** 2))
     record["t2_tick_variant"] = var
+    fl = confs[E1]["timing"][1]                                    # post hoc: a tick-limited fraction shared by ND and FD?
+    frac = {}
+    for which, w, tick in (("nd", "NC-TND", 125.0), ("fd", "NC-TFD", 500.0)):
+        h = tasks[w]["stock"]["hists"]["sigma_low"]
+        frac[which] = ((np.clip(np.array(h["values"]) ** 2 - fl[which] ** 2, 0, None)) / (tick ** 2 / 12)).tolist()
+    hl = tasks["NC-TND"]["stock"]["hists"]["sigma_low"]
+    record["post_hoc"]["tick_limited_fraction"] = {
+        "comment": "(sigma^2 - floor^2) / (tick^2 / 12) per low-charge bin: the fraction of hits with tick-limited timing "
+                   "that would explain the excess; the same in ND and FD if that were the mechanism",
+        "pe": (0.5 * (np.array(hl["edges"][:-1]) + np.array(hl["edges"][1:]))).tolist(), **frac}
+    orig = [cn for cn in confs if cn[0] in "ABCD"]                 # the arms of criteria.json / timing_criteria.json
     same_validity = all(record["configurations"][cn]["workflows"][w]["float32"]["validity"]
                         == record["configurations"][cn]["workflows"][w]["float64"]["validity"]
-                        for cn in confs for w in tasks)
+                        for cn in orig for w in tasks)
+
+    def x_unflagged(cn, w):
+        return all(not v["flag"] for dt in DTYPES for v in record["configurations"][cn]["extra_workflows"][w][dt]["hists"].values())
     record["verdicts"] = {
         "optics_validated": all(unflagged(B, w) and yields_pass(B, w) for w in ("NC-TB", "NC-FIBRE", "NC-FD")),
         "timing_validated": all(unflagged(C, w, "sigma_low") for w in ("NC-TND", "NC-TFD")),
         "timing_transfer_validated": unflagged(D, "NC-TFD", "sigma_low"),
         "dtype_agreement": bool(same_validity and all(record["configurations"][cn]["max_rel_dtype_diff"] <= 1e-4
-                                                      for cn in confs)),
+                                                      for cn in orig)),
+        "multipoint_timing_validated": all(unflagged(E1, w, "sigma_low") for w in ("NC-TND", "NC-TFD")),
+        "incell_optics_validated": bool(unflagged(E2, "NC-FD") and yields_pass(E2, "NC-FD") and x_unflagged(E2, "NC-FDSIM")),
     }
     a.record.write_text(json.dumps(record, indent=1, default=float) + "\n")
     for cn, c in record["configurations"].items():
