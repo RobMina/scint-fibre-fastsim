@@ -1,0 +1,23 @@
+{
+  "comment": "Public sources of the NOvA cell references. fetch.sh downloads each file and checks its sha256; extract.py reads the figures named here. Cite the source with any use of the extracted points.",
+  "sources": {
+    "testbeam": {
+      "file": "testbeam_2609.10804v2.pdf",
+      "url": "https://arxiv.org/pdf/2609.10804v2",
+      "sha256": "51f0509996d500896888c70859d3f7f6feb3044233e38f4d76ce42f1709874ea",
+      "cite": "NOvA Collaboration (S. Abubakar et al.), The NOvA Test Beam program, arXiv:2609.10804v2, FERMILAB-PUB-26-0647-PPD"
+    },
+    "niner": {
+      "file": "niner_thesis_2015.pdf",
+      "url": "https://inspirehep.net/files/370188acb888df47bac0bd0e125d8e1a",
+      "sha256": "cea79940cc2323471bfba2c7dd377b66ed9f92ee3ae17598536dc99b920f4f0f",
+      "cite": "E. Niner, PhD thesis, Indiana University (2015), FERMILAB-THESIS (public on INSPIRE)"
+    },
+    "simchain": {
+      "file": "aurisano_chep2015.pdf",
+      "url": "https://www.osti.gov/servlets/purl/1250781",
+      "sha256": "aa80afd8be0aa95c2c87ac979bdfbf6e3dc015765c2b9fe4f2428900de2b880e",
+      "cite": "A. Aurisano et al., The NOvA simulation chain, J. Phys. Conf. Ser. 664 (2015) 072002"
+    }
+  }
+}

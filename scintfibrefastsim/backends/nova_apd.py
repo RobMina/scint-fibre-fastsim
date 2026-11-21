@@ -96,6 +96,40 @@ def dcs(wave, lag):
     return wave[..., lag:] - wave[..., :-lag]
 
 
+def pulse_slope(tau, p: APDParams):
+    """d pulse / d tau (per ns) of the unit-peak CR-RC pulse (0 for ``tau <= 0``)."""
+    xp = _xp(tau, p.tau_rise)
+    tr, tf = p.tau_rise, p.tau_fall
+    tp = tr * tf / (tf - tr) * xp.log(tf / tr)
+    norm = 1.0 / (xp.exp(-tp / tf) - xp.exp(-tp / tr))
+    tc = xp.maximum(tau, 0.0)
+    return xp.where(tau > 0, norm * (xp.exp(-tc / tr) / tr - xp.exp(-tc / tf) / tf), 0.0)
+
+
+def timing_crb(pe, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT, n_phase: int = 64):
+    """Cramer-Rao bound (ns) on the hit time from a joint (charge, time) fit to the ``n_samples`` DCS samples.
+
+    The samples are ``q s_j(t) + n_j`` with ``s`` the DCS of the unit-peak pulse and white noise ``noise_pe`` per raw
+    sample, so the DCS noise covariance is ``noise_pe^2 (2 delta_jk - delta_|j-k|,dcs_lag)``. With ``g = ds/dt`` and
+    ``W`` the inverse covariance, ``var t = 1 / (q^2 (g'Wg - (s'Wg)^2 / s'Ws))``; it is averaged over a uniform clock
+    phase (``n_phase`` points). Charge fluctuations do not enter (the charge is the nuisance parameter). This is the
+    best a template fit can do: an actual fit, calibration offsets and the photon arrival spread add to it."""
+    xp = _xp(pe)
+    dt = pe.dtype if hasattr(pe, "dtype") else np.float64
+    n, lag = ro.n_samples, ro.dcs_lag
+    cov = 2.0 * np.eye(n) - np.eye(n, k=lag) - np.eye(n, k=-lag)
+    W = xp.asarray(np.linalg.inv(cov) / p.noise_pe ** 2, dt)
+    phase = xp.asarray((np.arange(n_phase) + 0.5) / n_phase * ro.tick, dt)
+    tau = sample_times(phase, p._replace(clock_phase=0.0), ro)                    # [n_phase, lag + n]
+    s = dcs(pulse(tau, p), lag)
+    g = -dcs(pulse_slope(tau, p), lag)                                         # d/dt of the samples
+    sws = xp.einsum("pi,ij,pj->p", s, W, s)
+    gwg = xp.einsum("pi,ij,pj->p", g, W, g)
+    swg = xp.einsum("pi,ij,pj->p", s, W, g)
+    info = gwg - swg ** 2 / sws                                                 # per unit charge^2, per phase
+    return xp.sqrt(xp.mean(1.0 / info)) / xp.maximum(pe, 1e-12)
+
+
 def _ndtr(x):
     xp = _xp(x)
     if xp is np:

@@ -3,6 +3,7 @@
 | Plan | Oracle | Status |
 |---|---|---|
 | `strip_vs_crvstandalone` | [Mu2e/CRVStandalone](https://github.com/Mu2e/CRVStandalone) HEAD, table mode, its default counter | **passes** in float64 and float32 (2026-11-21): header geometry identical; per-bin probability, time and emission pulls consistent with zero over 61 bins of the three photon sources ([report](../../validation/crvstandalone/README.md)) |
+| `nova_cell_vs_public_data` | public NOvA measurements: Test Beam cell (arXiv:2609.10804), fibre attenuation (J. Phys. Conf. Ser. 664 (2015) 072002), Far Detector cell and ND/FD timing resolution (Niner thesis 2015) | train references pass. Test references fail as declared: the 15 m cell is over-attenuated, and timing between 30 and 400 PE is too optimistic (float32 = float64). See the [report](../../validation/nova_cell/README.md) and [benchmark](../../benchmarks/nova_cell/README.md) |
 | `toy_optical_smoke` | toy self-check (no Geant4) | runs in CI |
 
 The CRVStandalone check runs on CRVStandalone's own default counter (`scintfibrefastsim.validation.crvstandalone`),

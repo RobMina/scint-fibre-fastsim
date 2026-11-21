@@ -1,0 +1,134 @@
+benchmark_name: NOVA-CELL (NOvA cell response against public data)
+scored_date: '2026-11-21'
+notes: 'First self-score, on the working tree of branch validation/nova-cell before it is pushed. Caveats: (1) the two
+  public-availability items of the reference solution are false until the branch is merged into the public repository;
+  (2) the data have no Croissant or HEPData record; (3) the Codabench title, logo, terms and dates are placeholders and
+  no upload is planned. Arithmetic by benchmark-builder score_benchmark.py.'
+software_environment:
+- id: code_available
+  description: The code is available to reproduce the baseline reference solution.
+  met: true
+  evidence: 'validation/nova_cell/compare.py (configurations A, B, C), reference.py, extract.py, fetch.sh; benchmarks/nova_cell/build.py;
+    the model in scintfibrefastsim (response.cell, backends.nova_apd.timing_crb).'
+- id: code_complete
+  description: The provided code is complete.
+  met: true
+  evidence: build.py runs the whole path from the committed data to the record, the leaderboard and the Codabench bundle;
+    fetch.sh + extract.py rebuild the data from the source PDFs.
+- id: code_documented
+  description: The code itself is well documented.
+  met: true
+  evidence: Module docstrings of extract.py, reference.py, compare.py, build.py and nova_apd.timing_crb; validation/nova_cell/README.md
+    (method, running); this card.
+- id: code_runs_unmodified
+  description: The code does not require any modifications to run.
+  met: true
+  evidence: build.py and compare.py ran unmodified on a laptop CPU (3 s); extract.py reproduced data/*.json from the fetched
+    PDFs; tests/test_nova_timing.py reruns compare.py and matches the committed record.
+- id: env_specified
+  description: The environment is either containerized, or environment details and setup instructions are provided.
+  met: true
+  evidence: 'pyproject.toml extras validation (jax, hep-simbench pinned to f966330) and extract (pdfminer.six, pypdf, Pillow,
+    SciPy); card Quick start and section 5; CI job.'
+problem_specification:
+- id: constraints_provided
+  description: System constraints (power, latency, throughput, etc.) are provided.
+  met: true
+  evidence: 'Card section 1 Constraints: float32 and float64 both required; parameters only from the train split; NumPy-only
+    scorer on one CPU core; throughput explicitly not constrained or scored (stock_rate_per_slot null).'
+- id: task_clear
+  description: The benchmark task is clear.
+  met: true
+  evidence: Card section 1 Task and the workflow table (what each W predicts, its bins and split).
+- id: dataset_format_specified
+  description: The dataset format is clearly specified.
+  met: true
+  evidence: Card section 2 Schema; hep-simbench hists.json layout; data/*.json fields (points, errors, source, method, calibration,
+    hash).
+- id: inputs_specified
+  description: The task inputs are clearly specified.
+  met: true
+  evidence: Card section 1 workflow table (cell length, readout position, dE/dx, fibre length, front-end shaping and sampling,
+    charge bins) and reference.json per workflow.
+- id: outputs_specified
+  description: The task outputs are clearly specified.
+  met: true
+  evidence: Card Quick start (MY_SUBMISSION/<W>/<dtype>/hists.json with the stock edges and names) and the example solution_submission.zip.
+dataset:
+  fair:
+  - id: findable
+    description: Each instance is uniquely identified and documented (Findable).
+    met: true
+    evidence: Every point is identified by source, figure and bin (data/*.json; reference hists by workflow, histogram and
+      edge).
+  - id: accessible
+    description: Access is provided through persistent, open protocols (Accessible).
+    met: true
+    evidence: Public sources (arXiv, OSTI, INSPIRE; sources.json URLs and sha256) and the data committed in the repository.
+  - id: interoperable
+    description: Formats and metadata follow community standards (Interoperable).
+    met: false
+    evidence: JSON in hep-simbench's documented schema, but no community-standard metadata (no Croissant record, no HEPData
+      record).
+  - id: reusable
+    description: Versioning with associated preprocessing scripts enables full reproducibility (Reusable).
+    met: true
+    evidence: The extraction script is versioned with the data; every data file records its source hash, figure, method
+      and calibration; the test checks completeness and hashes.
+  splits_defined:
+    description: A canonical, non-overlapping train/validation/test split is provided.
+    met: true
+    evidence: 'Card section 2 Splits: train = NC-TB, NC-FIBRE, timing >= 800 PE; test = NC-FD, timing < 400 PE; non-overlapping
+      by detector and charge range (reference.json split field).'
+performance_metrics:
+  definition_level: 3
+  definition_evidence: Card section 3 gives each formula (chi2/ndf, flag rule with the floor, yield rule and tolerances, validity
+    and its mean); implemented in hepsimbench.score (pinned) and copied unchanged into the bundle.
+  quality_level: 1
+  quality_evidence: The metrics capture the mean response along the cell, the absolute light level and the timing resolution,
+    but not event-by-event fluctuations, charge spectra or hit efficiency (card section 3 and Known limitations).
+reference_solution:
+- id: publicly_available
+  description: A reference solution is publicly available.
+  met: false
+  evidence: Configuration C is in this working tree on branch validation/nova-cell, not yet merged into the public repository.
+- id: well_documented
+  description: The provided reference solution is well documented.
+  met: true
+  evidence: Card section 4 (method, fitted values, results) and validation/nova_cell/README.md (configurations, protocol,
+    result).
+- id: requirements_listed
+  description: All hardware and/or software requirements to run the reference solution are listed.
+  met: true
+  evidence: 'Card section 4 Requirements: Python >= 3.10, NumPy, JAX on CPU, hep-simbench; a few seconds on one core.'
+- id: all_metrics_evaluated
+  description: All metrics defined as part of the benchmark are evaluated as part of the reference solution.
+  met: true
+  evidence: reference_results/LEADERBOARD.md and validation/nova_cell/record.json give every histogram statistic, yield,
+    validity and the score for A, B and C in both dtypes.
+- id: openly_available_for_study
+  description: The baseline solution/model is openly available for study (and if a neural network, the architecture, hyperparameters,
+    and training code are provided).
+  met: false
+  evidence: Same as publicly_available; the model is a parametric function (no neural network), its fit code is compare.py.
+documentation:
+- id: task_explained
+  description: The task is explained and well documented.
+  met: true
+  evidence: Card sections 1 and 3.
+- id: background_explained
+  description: The task and benchmark background (scientific and otherwise) is clearly explained.
+  met: true
+  evidence: Card section 5 Background; validation README References.
+- id: motivation_explained
+  description: The motivation for the benchmark is clearly explained.
+  met: true
+  evidence: Card section 5 Motivation.
+- id: evaluation_criteria_explained
+  description: The evaluation criteria are clearly explained.
+  met: true
+  evidence: Card section 3; validation/nova_cell/criteria.json (declared before any prediction).
+- id: paper_exists
+  description: An academic paper about the benchmark exists.
+  met: false
+  evidence: No paper.
