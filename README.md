@@ -31,6 +31,11 @@ backends, geometry families and downstream users are described there.
 - Photosensor backends: see [docs/howto/backends.md](docs/howto/backends.md).
 - Expected cell response (`response`) and photosensor forms that run on NumPy or JAX: differentiable under
   JAX for fast detector simulations that fit or optimise through the response.
+- NOvA cell model against public NOvA data ([validation/nova_cell](validation/nova_cell/README.md)), with a
+  Genesis/MLCommons-format benchmark ([benchmarks/nova_cell](benchmarks/nova_cell/README.md)).
+  - Passes: the fibre curve and the 2.6 m Test Beam cell.
+  - Fails, declared before running: transferring those optics to a 15 m Far Detector cell, and the front-end timing
+    between 30 and 400 PE.
 - Device support: **CPU JAX tested in CI**, including a leg with pinned jax/numpy;
   NVIDIA/AMD/Intel via plain JAX/XLA are intended but not yet recorded in CI.
 

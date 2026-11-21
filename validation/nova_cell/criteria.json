@@ -1,0 +1,28 @@
+{
+  "comment": "Declared 2026-11-21, after the reference points were extracted (data/*.json) and before any model prediction for them was computed. The record carries this file's sha256.",
+  "scorer": "hep-simbench f966330 hepsimbench.score: values statistic sum (v_ref - v_arm)^2 / (e_ref^2 + e_arm^2); a histogram is flagged when chi2/ndf > max(2, 3 x floor) and p < 1e-3; a measured yield passes when |ratio - 1| - 3 se <= tolerance; validity = (1 - flagged fraction) x (fraction of yields passing)",
+  "workflows": {
+    "NC-TB":    {"reference": "R1", "split": "train", "hist": "pe_per_cm, 3 cm bins, |w| <= 99 cm (66 bins; the cell ends and the readout manifold are outside)", "errors": "the published error bars", "floor": "the paper's exponential fit (Eq. 6.2, red) at the bin centres", "yields": {"centre": "mean PE/cm of the 10 bins with |w| < 15 cm, error sd / sqrt(10); tolerance 0.05"}},
+    "NC-FIBRE": {"reference": "R4", "split": "train", "hist": "ln I at x = 1..26 m (1 m bins)", "errors": "0.01 (half the drawn line width; the digitisation error is 0.005)", "floor": "none (threshold 2)", "normalisation": "the scanner scale is arbitrary: an arm adds its own constant to ln T"},
+    "NC-FD":    {"reference": "R2", "split": "test", "hist": "pe_per_cm, 50 cm bins, |w| <= 725 cm (30 bins)", "errors": "empirical: the rms of (data - the thesis' double-exponential fit) over these bins, the same for every bin", "floor": "the thesis' fit at the bin centres", "yields": {"far_end": "mean of the bins at w = -725, -675 cm; tolerance 0.25 (another detector, gain and scintillator than the train set)", "near_over_far": "mean of the bins at w = 675, 725 cm over far_end; tolerance 0.10"}},
+    "NC-TND":   {"reference": "R5nd", "split": "test below 400 PE, train at 800 PE and above", "hist": "sigma_t (ns) in 25 PE bins, two histograms: low (PE < 400) and high (PE >= 800)", "errors": "empirical per histogram: the rms of (data - the thesis' fit) over its bins", "floor": "the thesis' fit"},
+    "NC-TFD":   {"reference": "R5fd", "split": "as NC-TND", "hist": "as NC-TND", "errors": "as NC-TND", "floor": "as NC-TND"}
+  },
+  "model": {
+    "cell": "scintfibrefastsim.geometry.nova_cell_tdr(length) with length 2600 mm (Test Beam, per the paper) and 15000 mm (Far Detector, readout at +750 cm and far end at -750 cm per the thesis caption); loop_extra 0; readout end at +x; d = L/2 - w",
+    "response": "PE/cm = yield_per_mev x qe x birks(dE/dx) x dE/dx x collection(d) with scintfibrefastsim.response (looped fibre, two-exponential), dE/dx = 1.8 MeV/cm for cosmic-ray muons in the scintillator (the Test Beam paper's Fig. 23 gives 1.77 MeV/cm true deposit for stopping muons)",
+    "fibre_curve": "ln of response.attenuation(x) (the fibre's own transmission; no cell)",
+    "timing_A_B": "the sampler as merged: sigma_t = time_res / sqrt(PE)",
+    "timing_C": "sigma_t(PE) = sqrt(sigma_CRB(PE)^2 + time_floor^2): sigma_CRB is the Cramer-Rao bound of a joint (charge, time) fit to the n_samples DCS samples of the front-end model (CR-RC shape, tick, dcs_lag, white noise noise_pe per raw sample, so DCS noise covariance noise_pe^2 (2 delta_jk - delta_|j-k|,lag)), the variance averaged over a uniform clock phase; ND: tick 125 ns, tau_rise 140 ns, tau_fall 4500 ns; FD: tick 500 ns, tau_rise 460 ns, tau_fall 7000 ns (public thesis values); dcs_lag 3 and n_samples 8 for both; noise_pe 1.5 (the default; about 150 electrons at gain 100, TDR); photon arrival spread not included"
+  },
+  "configurations": {
+    "A_defaults": "scint-fibre-fastsim defaults as merged (CellOptics(), APDParams()); nothing fitted. Baseline: reported, no pass line",
+    "B_train_fit": "fitted on the train split only, in this order: (1) frac_short, atten_short, atten_long and the offset to NC-FIBRE (least squares; frac in [0, 1], lengths in [100, 50000] mm); (2) yield_per_mev to the NC-TB histogram with the attenuation from (1) (one linear parameter); (3) time_res to the high histograms of NC-TND and NC-TFD separately. Everything else at its default",
+    "C_frontend_timing": "B, with timing_C instead of timing_A_B; time_floor fitted to each high histogram; noise and shaping not fitted"
+  },
+  "pass_lines": {
+    "optics_validated": "configuration B: NC-TB, NC-FIBRE and NC-FD unflagged and all their yields pass, in both float32 and float64",
+    "timing_validated": "configuration C: the low histograms of NC-TND and NC-TFD unflagged in both floats",
+    "dtype_agreement": "every arm's float32 and float64 predictions agree to 1e-4 relative (timing and PE), and their validities are identical"
+  }
+}
