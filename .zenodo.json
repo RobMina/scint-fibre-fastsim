@@ -1,7 +1,7 @@
 {
   "title": "scint-fibre-fastsim: scintillator and wavelength-shifting fibre optical Monte Carlo for fast detector simulation",
   "upload_type": "software",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "scint-fibre-fastsim simulates scintillation light in extruded scintillator strips read out by wavelength-shifting fibres, on JAX devices (CPU or GPU, float32 or float64), and generates the optical lookup tables that fast detector simulations draw from. One experiment-neutral optical core (a JAX port of the table mode of the public CRVStandalone Geant4 optical simulation) serves parametric geometry families and a common photosensor interface with SiPM and APD backends; a toy self-check and declared Geant4 compare plans come with it.",
   "creators": [
     {
@@ -23,7 +23,7 @@
   "access_right": "open",
   "related_identifiers": [
     {
-      "identifier": "https://github.com/RobMina/scint-fibre-fastsim/tree/v0.1.5",
+      "identifier": "https://github.com/RobMina/scint-fibre-fastsim/tree/v0.1.6",
       "relation": "isSupplementTo",
       "scheme": "url"
     }
