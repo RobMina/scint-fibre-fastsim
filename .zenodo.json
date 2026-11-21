@@ -1,0 +1,35 @@
+{
+  "title": "scint-fibre-fastsim: scintillator and wavelength-shifting fibre optical Monte Carlo for fast detector simulation",
+  "upload_type": "software",
+  "version": "0.1.5",
+  "description": "scint-fibre-fastsim simulates scintillation light in extruded scintillator strips read out by wavelength-shifting fibres, on JAX devices (CPU or GPU, float32 or float64), and generates the optical lookup tables that fast detector simulations draw from. One experiment-neutral optical core (a JAX port of the table mode of the public CRVStandalone Geant4 optical simulation) serves parametric geometry families and a common photosensor interface with SiPM and APD backends; a toy self-check and declared Geant4 compare plans come with it.",
+  "creators": [
+    {
+      "name": "Mina, Rob",
+      "affiliation": "University of Virginia",
+      "orcid": "0000-0003-2241-8566"
+    }
+  ],
+  "license": "Apache-2.0",
+  "keywords": [
+    "fast simulation",
+    "scintillator",
+    "wavelength-shifting fibre",
+    "optical photons",
+    "lookup tables",
+    "JAX",
+    "particle physics"
+  ],
+  "access_right": "open",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/RobMina/scint-fibre-fastsim/tree/v0.1.5",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ],
+  "references": [
+    "Mu2e Collaboration, CRVStandalone: standalone Geant4 simulation of the Mu2e Cosmic Ray Veto counters, https://github.com/Mu2e/CRVStandalone"
+  ],
+  "notes": "The optical core is a JAX port of the table mode of the public Mu2e/CRVStandalone optical simulation (Apache-2.0); see NOTICE."
+}
