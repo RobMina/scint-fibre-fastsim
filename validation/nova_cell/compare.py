@@ -64,6 +64,16 @@ def sigma_crb(pe, which, floor, apd: APDParams, dtype):
     return jnp.sqrt(crb ** 2 + jnp.asarray(floor, dtype) ** 2)
 
 
+def sigma_t2(pe, which, kappa, floor, apd: APDParams, dtype, scale="tau_rise"):
+    """Study T2: nova_apd.time_resolution with the detector's shaping; the extra spread is kappa x tau_rise (or, for
+    the descriptive variant, kappa x tick)."""
+    ro, shaping = READOUT[which]
+    p = apd._replace(**shaping, time_kappa=kappa, time_floor=floor)
+    if scale == "tick":
+        p = p._replace(time_kappa=kappa * ro.tick / p.tau_rise)
+    return nova_apd.time_resolution(jnp.asarray(pe, dtype), _cast(p, dtype), ro)
+
+
 def _cast(nt, dtype):
     return type(nt)(*[jnp.asarray(v, dtype) for v in nt])
 
@@ -151,6 +161,39 @@ def post_hoc(tasks, floors) -> dict:
     return out
 
 
+def _gn(resid, q0, iters=200):
+    """Levenberg-Marquardt on a residual vector (numerical Jacobian)."""
+    q, lam = np.array(q0, float), 1e-3
+    for _ in range(iters):
+        r = resid(q)
+        J = np.stack([(resid(q + h) - r) / 1e-7 for h in np.eye(len(q)) * 1e-7], axis=1)
+        q_new = q + np.linalg.solve(J.T @ J + lam * np.diag(np.diag(J.T @ J) + 1e-12), -J.T @ r)
+        if np.sum(resid(q_new) ** 2) < np.sum(r ** 2):
+            q, lam = q_new, lam / 3
+        else:
+            lam *= 5
+    return q, resid(q)
+
+
+def fit_t2(tasks, apd, scale="tau_rise"):
+    """Study T2 (timing_criteria.json): kappa and the ND floor on all ND points, then the FD floor on the FD high
+    histogram with kappa fixed."""
+    cen = lambda h: 0.5 * (np.array(h["edges"][:-1]) + np.array(h["edges"][1:]))
+    nd = [tasks["NC-TND"]["stock"]["hists"][k] for k in ("sigma_low", "sigma_high")]
+    x = np.concatenate([cen(h) for h in nd])
+    y = np.concatenate([h["values"] for h in nd])
+    e = np.concatenate([h["errors"] for h in nd])
+    res_nd = lambda q: (np.asarray(sigma_t2(x, "nd", abs(q[0]), abs(q[1]), apd, jnp.float64, scale)) - y) / e
+    (k, f_nd), r = _gn(res_nd, [0.5, 5.0])
+    k, f_nd = abs(k), abs(f_nd)
+    hh = tasks["NC-TFD"]["stock"]["hists"]["sigma_high"]
+    xf, yf, ef = cen(hh), np.array(hh["values"]), np.array(hh["errors"])
+    res_fd = lambda q: (np.asarray(sigma_t2(xf, "fd", k, abs(q[0]), apd, jnp.float64, scale)) - yf) / ef
+    (f_fd,), _ = _gn(res_fd, [9.0])
+    return {"kappa": float(k), "floors": {"nd": float(f_nd), "fd": float(abs(f_fd))},
+            "nd_fit_chi2ndf": float(np.sum(r ** 2) / len(r)), "scale": scale}
+
+
 def fit_floor(pe, y, which, apd):
     crb = np.asarray(sigma_crb(pe, which, 0.0, apd, jnp.float64))
     grid = np.linspace(0.0, 50.0, 50001)
@@ -187,9 +230,11 @@ def configurations(tasks):
         floors[which] = fit_floor(x, y, which, apd0)
     return {
         "A_defaults": {"optics": opt0, "apd": apd0, "offset": float(np.mean(np.array(hf["values"]) - np.asarray(
-            ln_fibre(cen(hf), opt0, 0.0, jnp.float64)))), "timing": ("sqrt", {k: apd0.time_res for k in tres})},
+            ln_fibre(cen(hf), opt0, 0.0, jnp.float64)))), "timing": ("sqrt", {k: 10.0 for k in tres})},  # 0.1.6 default
         "B_train_fit": {"optics": optB, "apd": apd0, "offset": fib["offset"], "timing": ("sqrt", tres), "fibre_fit": fib},
         "C_frontend_timing": {"optics": optB, "apd": apd0, "offset": fib["offset"], "timing": ("crb", floors)},
+        "D_timing_t2": {"optics": optB, "apd": apd0, "offset": fib["offset"], "timing": ("t2", fit_t2(tasks, apd0)),
+                        "note": "study T2; uses NC-TND sigma_low, so not a NOVA-CELL submission"},
     }
 
 
@@ -222,7 +267,12 @@ def arm_hists(tasks, conf, dtype) -> dict:
         for name in ("sigma_low", "sigma_high"):
             h = tasks[w]["stock"]["hists"][name]
             x = cen(h)
-            v = sigma_sqrt(x, par[which], dt) if kind == "sqrt" else sigma_crb(x, which, par[which], apd, dt)
+            if kind == "sqrt":
+                v = sigma_sqrt(x, par[which], dt)
+            elif kind == "crb":
+                v = sigma_crb(x, which, par[which], apd, dt)
+            else:
+                v = sigma_t2(x, which, par["kappa"], par["floors"][which], apd, dt, par["scale"])
             hs[name] = H(h, v)
         out[w] = {"hists": hs}
     return out
@@ -254,6 +304,7 @@ def main(argv=None) -> int:
     tasks = REF.write(ref)
     confs = configurations(tasks)
     record = {"criteria_sha256": _sha(HERE / "criteria.json"),
+              "timing_criteria_sha256": _sha(HERE / "timing_criteria.json"),
               "data_sha256": {p.name: _sha(p) for p in sorted((HERE / "data").glob("*.json"))},
               "scint_fibre_fastsim": _commit(), "hep_simbench": getattr(hepsimbench, "__version__", None),
               "empirical_errors": {w: t["cfg"].get("empirical_error", t["cfg"].get("empirical_errors"))
@@ -282,8 +333,11 @@ def main(argv=None) -> int:
                                      for h in r["hists"]},
                            "yields": {y["yield"]: {k: y[k] for k in ("ratio", "se", "pass")} for y in r["yields"]}}
                       for dt, r in wr.items()}
+        kind = conf["timing"][0]
         par = {"optics": conf["optics"]._asdict(), "fibre_offset": conf["offset"], "timing": {
-            "model": conf["timing"][0], "time_res" if conf["timing"][0] == "sqrt" else "time_floor": conf["timing"][1]}}
+            "model": kind, {"sqrt": "time_res", "crb": "time_floor", "t2": "fit"}[kind]: conf["timing"][1]}}
+        if "note" in conf:
+            par["note"] = conf["note"]
         if "fibre_fit" in conf:
             par["fibre_fit"] = conf["fibre_fit"]
         record["configurations"][name] = {"parameters": par, "validity_mean": res["validity_score"],
@@ -296,14 +350,21 @@ def main(argv=None) -> int:
     def yields_pass(cn, w):
         return all(v["pass"] for dt in DTYPES for v in record["configurations"][cn]["workflows"][w][dt]["yields"].values())
 
-    B, C = "B_train_fit", "C_frontend_timing"
+    B, C, D = "B_train_fit", "C_frontend_timing", "D_timing_t2"
     record["post_hoc"] = post_hoc(tasks, confs[C]["timing"][1])
+    var = fit_t2(tasks, APDParams(), "tick")                       # descriptive only (timing_criteria.json)
+    hl = tasks["NC-TFD"]["stock"]["hists"]["sigma_low"]
+    xl = 0.5 * (np.array(hl["edges"][:-1]) + np.array(hl["edges"][1:]))
+    pr = np.asarray(sigma_t2(xl, "fd", var["kappa"], var["floors"]["fd"], APDParams(), jnp.float64, "tick"))
+    var["fd_low_chi2ndf"] = float(np.mean(((pr - np.array(hl["values"])) / np.array(hl["errors"])) ** 2))
+    record["t2_tick_variant"] = var
     same_validity = all(record["configurations"][cn]["workflows"][w]["float32"]["validity"]
                         == record["configurations"][cn]["workflows"][w]["float64"]["validity"]
                         for cn in confs for w in tasks)
     record["verdicts"] = {
         "optics_validated": all(unflagged(B, w) and yields_pass(B, w) for w in ("NC-TB", "NC-FIBRE", "NC-FD")),
         "timing_validated": all(unflagged(C, w, "sigma_low") for w in ("NC-TND", "NC-TFD")),
+        "timing_transfer_validated": unflagged(D, "NC-TFD", "sigma_low"),
         "dtype_agreement": bool(same_validity and all(record["configurations"][cn]["max_rel_dtype_diff"] <= 1e-4
                                                       for cn in confs)),
     }

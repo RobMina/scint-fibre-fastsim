@@ -1,0 +1,11 @@
+{
+  "comment": "Study T2, declared 2026-11-21 after the first comparison (criteria.json, record.json) and before any prediction of this model was computed. It supersedes nothing: configurations A, B and C and their verdicts stay as they are. The record carries this file's sha256.",
+  "why": "The front-end bound (timing_crb) alone matches the 12.5 PE bins but falls faster than the data between 30 and 400 PE. In the ND data, (sigma^2 - floor^2) x PE is roughly constant between 37.5 and 362.5 PE, so a term in 1/sqrt(PE) is missing. The high-charge training points alone cannot separate such a term from the floor (1/PE changes by only a factor 2 over 800-1600 PE).",
+  "model": "sigma_t(PE)^2 = sigma_CRB(PE)^2 + (time_kappa x tau_rise)^2 / PE + time_floor^2, with sigma_CRB exactly as in criteria.json (timing_C) and tau_rise the detector's rise time (ND 140 ns, FD 460 ns). time_kappa is one dimensionless constant shared by the two front ends; the hypothesis is that the extra spread scales with the front-end rise time",
+  "fit": "float64 least squares with the reference's empirical errors: (1) time_kappa and the ND time_floor together, on all ND points of both NC-TND histograms (sigma_low and sigma_high); (2) the FD time_floor on NC-TFD sigma_high with time_kappa fixed",
+  "test": "NC-TFD sigma_low (16 bins, PE < 400): the hep-simbench values statistic and flag rule of criteria.json (threshold max(2, 3 x floor) = 3, p < 1e-3), in float32 and float64",
+  "pass_line": {"timing_transfer_validated": "NC-TFD sigma_low unflagged in both floats"},
+  "reported_not_scored": ["the ND closure (chi2/ndf of both NC-TND histograms; they were fitted)", "a variant with the extra spread scaled by the tick instead of tau_rise (descriptive only)"],
+  "benchmark": "configuration D (optics of B, this timing) uses NC-TND sigma_low, a test histogram of NOVA-CELL, so it is not a benchmark submission and is left off the leaderboard",
+  "adoption": "whatever the verdict, nova_apd's sampler and backend draw hit times with this model (nova_apd.time_resolution) instead of time_res / sqrt(PE); the defaults are the ND fit (the default readout is the ND one); the documentation states the verdict"
+}

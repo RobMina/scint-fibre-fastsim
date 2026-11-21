@@ -40,6 +40,8 @@ def leaderboard(record: dict) -> str:
     rows = ["| Configuration | Validity score (mean) | " + " | ".join(f"{w} f32 / f64" for w in WORKFLOWS) + " |",
             "|---|---|" + "---|" * len(WORKFLOWS)]
     for cn, c in record["configurations"].items():
+        if cn not in NAMES:                       # D (study T2) uses a test histogram: not a submission
+            continue
         cells = []
         for w in WORKFLOWS:
             r = c["workflows"][w]

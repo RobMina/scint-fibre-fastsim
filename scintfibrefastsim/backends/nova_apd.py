@@ -48,7 +48,8 @@ class APDParams(NamedTuple):
     tau_rise: float = 140.0        # ns
     tau_fall: float = 4500.0       # ns
     clock_phase: float = 0.0       # ns
-    time_res: float = 10.0         # ns at one photoelectron, scales as 1/sqrt(n_pe)
+    time_kappa: float = 0.449      # extra hit-time spread kappa x tau_rise / sqrt(n_pe) (time_resolution); ND fit
+    time_floor: float = 6.09       # ns, constant hit-time term (calibration, clock); ND fit
 
 
 @dataclass(frozen=True)
@@ -130,6 +131,19 @@ def timing_crb(pe, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT, n_pha
     return xp.sqrt(xp.mean(1.0 / info)) / xp.maximum(pe, 1e-12)
 
 
+def time_resolution(pe, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT):
+    """Hit-time resolution (ns) at charge ``pe``: ``sqrt(timing_crb^2 + (time_kappa tau_rise)^2 / pe + time_floor^2)``.
+
+    The bound is the front end's own (no free parameter); the 1/sqrt(pe) term scales with the rise time so one
+    ``time_kappa`` serves front ends with other shaping; the floor is constant. The defaults are fitted to public
+    Near Detector data (validation/nova_cell, study T2). There it is within about 25 % of the measured resolution from
+    12 to 400 PE, but the data fall faster than this form between 12 and 100 PE, and the transfer to the Far Detector
+    front end fails the declared test (the form, not only the constants, is incomplete)."""
+    xp = _xp(pe)
+    q = xp.maximum(pe, 1.0)
+    return xp.sqrt(timing_crb(q, p, ro) ** 2 + (p.time_kappa * p.tau_rise) ** 2 / q + p.time_floor ** 2)
+
+
 def _ndtr(x):
     xp = _xp(x)
     if xp is np:
@@ -165,7 +179,7 @@ def expected(pe, time, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT):
 
 def sample(key, pe, time, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT):
     """One draw per channel (JAX): Poisson photoelectrons, APD gain fluctuation, per-sample noise, DCS threshold and
-    time jitter. Returns ``(charge_pe, adc, time, hit)``; ADC rounded."""
+    time jitter (:func:`time_resolution` at the drawn charge). Returns ``(charge_pe, adc, time, hit)``; ADC rounded."""
     import jax
     import jax.numpy as jnp
 
@@ -176,7 +190,7 @@ def sample(key, pe, time, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT
     shape = pulse(sample_times(time, p, ro), p)
     wave = q[..., None] * g * shape + p.noise_pe * g * jax.random.normal(k3, shape.shape, pe.dtype)
     peak = jnp.max(dcs(wave, ro.dcs_lag), axis=-1)
-    t = time + p.time_res / jnp.sqrt(jnp.maximum(q, 1.0)) * jax.random.normal(k4, pe.shape, pe.dtype)
+    t = time + time_resolution(q, p, ro) * jax.random.normal(k4, pe.shape, pe.dtype)
     return q, jnp.round(peak), t, peak > p.threshold_pe * g
 
 
@@ -217,5 +231,5 @@ class NovaAPDBackend:
             adc[c] = np.round(peak)
             hit[c] = peak > p.threshold_pe * p.adc_per_pe
             if sel.any():
-                tm[c] = t[sel].mean() + p.time_res / math.sqrt(sel.sum()) * rng.normal()
+                tm[c] = t[sel].mean() + float(time_resolution(np.array(float(sel.sum())), p, ro)) * rng.normal()
         return dict(backend=self.name, n_photons=n_ph, n_pe=n_pe, adc=adc, time=tm, hit=hit)

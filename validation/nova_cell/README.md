@@ -56,7 +56,7 @@ The model:
   - `collection(d)` is `response.fibre_transport` for a looped fibre, with d = L/2 - w measured to the readout end.
   - L = 2.6 m (Test Beam); 15 m for the Far Detector, which the caption gives as readout at +750 cm and far end at -750 cm.
 - **Fibre curve:** ln of `response.attenuation`, with a free offset because the scanner's scale is arbitrary.
-- **Timing:** either the sampler as merged (`time_res / sqrt(PE)`), or the new `nova_apd.timing_crb` with a constant
+- **Timing:** either the sampler as merged in 0.1.6 (`time_res / sqrt(PE)`, 10 ns), or the new `nova_apd.timing_crb` with a constant
   floor added in quadrature.
   - `timing_crb` is the Cramér–Rao bound of a joint charge-and-time fit to the DCS samples of the front-end model:
     CR-RC shape, tick, DCS lag 3, 8 samples, white noise of 1.5 PE per raw sample, averaged over the clock phase.
@@ -144,8 +144,44 @@ C's timing floors are 5.3 ns (ND) and 9.1 ns (FD).
 - A missing 1/sqrt(PE) term cannot explain this: it would spoil the agreement at 12.5 PE.
 - What the data need between 30 and 400 PE is open. Candidates: the collaboration fit not reaching the bound,
   correlated noise, and selection effects near threshold.
-- The sampler in this package still draws times with `time_res / sqrt(PE)`. `timing_crb` is available; it is not
-  wired into the sampler.
+- Study T2 below adds a term for the missing part, and the sampler now uses that model.
+
+## Study T2: a timing model across front ends (`timing_criteria.json`)
+
+Declared after the comparison above and before any prediction of this model:
+- **Model:** sigma_t^2 = timing_crb(PE)^2 + (time_kappa x tau_rise)^2 / PE + time_floor^2. One dimensionless
+  `time_kappa` is shared by the two front ends, on the hypothesis that the extra spread scales with the rise time
+  (140 ns ND, 460 ns FD).
+- **Fit:** `time_kappa` and the ND floor on all ND points (both histograms); then the FD floor on the FD points at
+  800 PE and above.
+- **Test:** the FD points below 400 PE, under the same flag rule.
+- Configuration D uses the ND points below 400 PE, which are a NOVA-CELL test histogram. So D is not a benchmark
+  submission, and it is not on the leaderboard.
+
+Result (`record.json`, configuration D and `t2_tick_variant`):
+
+| | ND below 400 PE (fitted) | ND 800 PE and above (fitted) | FD below 400 PE (**test**) | FD 800 PE and above |
+|---|---|---|---|---|
+| chi2/ndf (threshold 3) | 30.0 (flagged) | 1.83 | **65.1 (flagged)** | 1.64 |
+
+- Fitted values: `time_kappa` 0.449 (an extra 63 ns x sqrt(1/PE) in the ND); floors 6.09 ns (ND) and 6.79 ns (FD).
+- The transfer test **fails**, and the form does not describe even the ND points it was fitted to. Between 12 and
+  100 PE the data fall faster than a 1/sqrt(PE) term allows. The spread the data need beyond the bound and the floor
+  falls from about 96 ns x sqrt(1/PE) at 62 PE to 48 at 362 PE: an excess going roughly as PE^-0.75.
+- Scaling the extra spread by the tick instead of the rise time (descriptive) gives FD chi2/ndf 69.7.
+- No mechanism derived from the public front-end description gives that exponent:
+  - noise-limited timing goes as 1/PE (the bound);
+  - photon-arrival statistics give 1/sqrt(PE). A rough estimate from the two fibre paths and the decay times
+    puts the per-photon spread at about 15 ns in a 3.9 m cell, not 50-100 ns; this was not computed.
+- The collaboration's own fit leaves the exponent free.
+
+Adopted as declared: `nova_apd.sample` and `NovaAPDBackend.detect` now draw hit times with
+`nova_apd.time_resolution`, which is this model.
+- The defaults are the ND fit (`time_kappa` 0.449, `time_floor` 6.09 ns).
+- It replaces `time_res / sqrt(PE)` (10 ns: 2.6 ns at 15 PE against the measured 27 ns).
+- Against the ND data it is within about 25 % from 12 to 400 PE, at most 21 % high at 12.5 PE and 23 % low at
+  62.5 PE.
+- It is not validated for another front end.
 
 ## Running
 
