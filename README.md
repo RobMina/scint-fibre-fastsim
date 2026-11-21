@@ -7,6 +7,7 @@ common photosensor interface, and parametric geometry. **Apache-2.0.**
 | Layer | Role |
 |---|---|
 | `scintfibrefastsim.core` | Strip geometry, bins, Geant4-matched optics, device transport, host driver |
+| `scintfibrefastsim.response` | Expected (deterministic, differentiable) cell response: quenching, fibre transport, tabulated transport |
 | `scintfibrefastsim.backends` | Photosensor contract (`PhotosensorBackend`) and the backends built on it |
 | `scintfibrefastsim.geometry` | Parametric geometry families (strip, cell) |
 | `scintfibrefastsim.validation` | Toy self-check and Geant4 compare-plan hooks |
@@ -28,6 +29,8 @@ backends, geometry families and downstream users are described there.
 - Toy self-check (`run_toy_selfcheck`); an external Geant4 reference needs a wrapper
   script ([how-to](docs/howto/g4-compare.md)).
 - Photosensor backends: see [docs/howto/backends.md](docs/howto/backends.md).
+- Expected cell response (`response`) and photosensor forms that run on NumPy or JAX: differentiable under
+  JAX for fast detector simulations that fit or optimise through the response.
 - Device support: **CPU JAX tested in CI**, including a leg with pinned jax/numpy;
   NVIDIA/AMD/Intel via plain JAX/XLA are intended but not yet recorded in CI.
 

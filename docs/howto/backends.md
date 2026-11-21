@@ -25,4 +25,19 @@ backend = bind_crvfastsim_sipm_synthetic()
 # )
 ```
 
-`NovaAPDBackend` remains a Phase-2 stub.
+## NOvA APD + front end
+
+Three forms share `APDParams` (QE, ADC per photoelectron, excess noise, noise, threshold, shaping, clock phase,
+time resolution) and a static `Readout` (samples, tick, DCS lag):
+
+```python
+from scintfibrefastsim.backends import NOVA_APD, NOVA_ND_READOUT, NovaAPDBackend, nova_apd
+
+adc, p_hit = nova_apd.expected(pe, time, NOVA_APD, NOVA_ND_READOUT)     # NumPy or JAX; differentiable in JAX
+q, adc, t, hit = nova_apd.sample(key, pe, time, NOVA_APD, NOVA_ND_READOUT)   # JAX draw around it
+out = NovaAPDBackend(n_channels=32).detect(arrivals, seed=1)            # PhotosensorBackend over Arrival lists
+```
+
+Upstream of the APD, `scintfibrefastsim.response.light(edep, dedx, distance, cell, optics, table=None)` gives
+expected photons at the pixel and their delay for a `Cell` (`geometry.nova_cell_tdr()`), analytic or from a
+`CellTable`. A detector simulation multiplies by `apd.qe` and hands the per-channel sums to `nova_apd`.
