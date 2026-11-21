@@ -7,7 +7,7 @@
   "r5_timing_fd.json": "4be959ed8a1b65f1bc3d79cdc1083789c7fd9b76ec0b4343cf0cf7df9edf2a28",
   "r5_timing_nd.json": "b68b68dc1a8d0948029e38efc4d33544ceac13ee859d027ba1e02d1e89cb432e"
  },
- "scint_fibre_fastsim": "8dc73d0 (dirty)",
+ "scint_fibre_fastsim": "04409cd",
  "hep_simbench": "0.1.0",
  "empirical_errors": {
   "NC-TB": null,

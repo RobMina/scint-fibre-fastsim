@@ -76,7 +76,7 @@ Pass lines:
 - timing is validated if C's low-charge histograms pass;
 - every arm agrees between float32 and float64 to 1e-4.
 
-## Result (2026-11-21, scint-fibre-fastsim `8dc73d0` + this change, hep-simbench `f966330`, CPU)
+## Result (2026-11-21, scint-fibre-fastsim `04409cd`, hep-simbench `f966330`, CPU)
 
 | Configuration | Mean validity | NC-TB | NC-FIBRE | NC-FD | NC-TND | NC-TFD |
 |---|---|---|---|---|---|---|

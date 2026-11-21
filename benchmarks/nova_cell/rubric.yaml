@@ -1,9 +1,9 @@
 benchmark_name: NOVA-CELL (NOvA cell response against public data)
 scored_date: '2026-11-21'
-notes: 'First self-score, on the working tree of branch validation/nova-cell before it is pushed. Caveats: (1) the two
-  public-availability items of the reference solution are false until the branch is merged into the public repository;
-  (2) the data have no Croissant or HEPData record; (3) the Codabench title, logo, terms and dates are placeholders and
-  no upload is planned. Arithmetic by benchmark-builder score_benchmark.py.'
+notes: 'Rescored 2026-11-21 after the merge of scint-fibre-fastsim #15 (04409cd): the reference solution is public, so
+  its two availability items are met (first score, before the merge: 4.17). Caveats: (1) the data have no Croissant or
+  HEPData record; (2) the Codabench title, logo, terms and dates are placeholders and no upload is planned; (3) no paper.
+  Arithmetic by benchmark-builder score_benchmark.py.'
 software_environment:
 - id: code_available
   description: The code is available to reproduce the baseline reference solution.
@@ -90,8 +90,9 @@ performance_metrics:
 reference_solution:
 - id: publicly_available
   description: A reference solution is publicly available.
-  met: false
-  evidence: Configuration C is in this working tree on branch validation/nova-cell, not yet merged into the public repository.
+  met: true
+  evidence: Configuration C is in the public repository RobMina/scint-fibre-fastsim (merged in PR 15, commit 04409cd); compare.py
+    builds it and record.json holds its parameters.
 - id: well_documented
   description: The provided reference solution is well documented.
   met: true
@@ -109,8 +110,9 @@ reference_solution:
 - id: openly_available_for_study
   description: The baseline solution/model is openly available for study (and if a neural network, the architecture, hyperparameters,
     and training code are provided).
-  met: false
-  evidence: Same as publicly_available; the model is a parametric function (no neural network), its fit code is compare.py.
+  met: true
+  evidence: The model is a parametric function (no neural network) in the public package (scintfibrefastsim.response,
+    backends.nova_apd.timing_crb); its fit code is compare.py; fitted values in record.json and card section 4.
 documentation:
 - id: task_explained
   description: The task is explained and well documented.

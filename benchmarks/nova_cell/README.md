@@ -191,4 +191,5 @@ open, with a train/test split across detectors.
 ## Rubric self-score
 
 [`rubric.yaml`](rubric.yaml), scored with benchmark-builder's `score_benchmark.py` into
-[`SCORE_REPORT.md`](SCORE_REPORT.md).
+[`SCORE_REPORT.md`](SCORE_REPORT.md): 4.50 / 5. The remaining gaps are community-standard data metadata (Croissant or
+HEPData), metrics that cover only part of the response (no fluctuations or efficiency), and a paper.
