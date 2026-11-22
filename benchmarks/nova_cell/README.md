@@ -131,6 +131,7 @@ Results (CPU, 2026-11-21; [reference_results/LEADERBOARD.md](reference_results/L
 | A defaults (weak baseline) | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
 | B train fit (baseline) | 0.50 | 1.00 | 1.00 | 0.00 | 0.50 | 0.00 |
 | **C reference** | **0.60** | 1.00 | 1.00 | 0.00 | 0.50 | 0.50 |
+| E1 multi-point emulation (study T3) | 0.60 | 1.00 | 1.00 | 0.00 | 0.50 | 0.50 |
 
 float32 and float64 give the same validity for every arm. How to read this:
 - **Train split:** the reference solution passes everything.

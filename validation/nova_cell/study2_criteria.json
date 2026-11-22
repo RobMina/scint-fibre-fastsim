@@ -1,0 +1,21 @@
+{
+  "comment": "Studies T3 and O2, declared 2026-11-21 after R6 and R7 were extracted and before any prediction of either study was computed. They supersede nothing: configurations A-D and their verdicts stay. The record carries this file's sha256.",
+  "new_references": {
+    "R6": "Pershey thesis (2018) Fig. 7.4 left: mean PE/cm vs W in one Near Detector cell (L = 390 cm, readout at +W), 10 cm bins over |W| < 150 cm (the thesis' fit range), raster band; errors empirical: the rms of (data - the thesis' attenuation fit) over those bins",
+    "R7": "Pershey thesis (2018) Fig. 7.5: NOvA simulation, Far Detector Y view, uncalibrated mean reconstructed / true energy vs W (the simulated attenuation), 16 cm bins, vector-exact; compared over |W| <= 700 cm; errors empirical: the rms of the calibrated series about its mean over the same bins (the simulation sample's own scatter)"
+  },
+  "T3_timing": {
+    "why": "Niner thesis Sec. 4.6: multi-point readout records the trigger sample (the first sample whose DCS v_i - v_(i-3) passes the threshold) and the three preceding baseline-subtracted samples, and an offline fit of the pulse shape to these four samples gives the hit time. The resolution is the 1 %-truncated rms of hit-time differences in 25 PE bins. The bound in criteria.json assumed eight DCS samples at fixed positions; the real window moves with the charge.",
+    "model": "Monte Carlo emulation per 25 PE bin centre Q (fixed charge, no Poisson or gain smearing): raw samples every tick with white noise noise_pe per sample and the unit-peak CR-RC pulse of the detector (ND: tick 125 ns, 140 / 4500 ns; FD: tick 500 ns, 460 / 7000 ns) starting at a uniform random phase; trigger = first sample with v_i - v_(i-3) > threshold_pe; least-squares fit of (charge, time) to v_(i-3..i) with the same pulse template (Gauss-Newton from the true values, 10 iterations); hits without a trigger are dropped; resolution = rms of the time error after dropping the top and bottom 1 %; the result treated as a per-hit resolution (as compared before). noise_pe 1.5 and threshold_pe 10 (the package defaults, TDR scales): not fitted. 20000 trials per bin, fixed seed, in float32 and float64",
+    "fit": "a constant time_floor added in quadrature, per detector, fitted to the sigma_high histogram (train)",
+    "test": "NC-TND sigma_low and NC-TFD sigma_low (the original test histograms; nothing is fitted on them), flag rule of criteria.json",
+    "pass_line": {"multipoint_timing_validated": "both sigma_low histograms unflagged in both floats"},
+    "configuration": "E1 = optics of B + T3 timing: a valid NOVA-CELL submission (uses only the train split)"
+  },
+  "O2_optics": {
+    "model": "the looped two-exponential optics of criteria.json; the attenuation (frac_short, atten_short, atten_long) fitted to the Test Beam cell (NC-TB histogram, published errors) and the Near Detector cell (R6, empirical errors) together, with a free normalisation per cell; the yield is the Test Beam normalisation (as in B); L = 390 cm for R6. The fibre spool curve is not used",
+    "test": ["NC-FD: histogram and yields exactly as in criteria.json (absolute, with the Test Beam yield)", "R7: shape with a free normalisation over |W| <= 700 cm; flagged when chi2/ndf > 2 and p < 1e-3 (no floor)"],
+    "pass_line": {"incell_optics_validated": "NC-FD unflagged with both yields passing, and R7 unflagged, in both floats"},
+    "configuration": "E2 = O2 optics + T3 timing: validation only (R6 is outside the NOVA-CELL dataset, whose rules allow no added data)"
+  }
+}

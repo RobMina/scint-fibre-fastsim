@@ -21,6 +21,8 @@ Both float precisions agree. The details, and what the failures point to, are be
 | R4 | fibre attenuation curve used by the NOvA simulation (the average over fibre quality-control spools), ln I at 1-26 m | Aurisano et al., *The NOvA simulation chain*, J. Phys. Conf. Ser. 664 (2015) 072002, Fig. 8 | raster: the purple ln I series, sampled at whole metres (half a pixel = 0.005 in ln I) | train |
 | R2 | the same response along a 15 m Far Detector cell (plane 84, cell 12), with the thesis' double-exponential fit; labelled "NOvA Preliminary" | E. Niner, PhD thesis, Indiana University (2015), Fig. 3.16 | raster, **band**: the markers are 8 cm (2.5 px) apart and overlap, so the median marker row per pixel column is averaged in 50 cm bins | test |
 | R5 | multi-point hit-time resolution vs hit charge, Near Detector (8 MHz) and Far Detector (2 MHz) data, with the thesis' fits | the same thesis, Figs. 4.9(b) and 4.8(b) | raster: marker centroids on the 25 PE bin grid (half a pixel = 0.04 ns ND, 0.14 ns FD) | test below 400 PE, train at 800 PE and above |
+| R6 | the same response along a 3.9 m Near Detector cell, with the thesis' attenuation fit | D. Pershey, PhD thesis, Caltech (2018), Fig. 7.4 (left) | raster, band: the visible "+" markers, 10 cm bins over the thesis' fit range \|W\| < 150 cm (16 bins; bins hidden under the fit curves are missing) | study O2 only |
+| R7 | NOvA's simulation of the Far Detector response along a cell before attenuation calibration (Y view, deposits > 15 MeV) | the same thesis, Fig. 7.5 | **vector**: 98 markers per series, exact (the legend sample dropped) | study O2 only |
 
 `sources.json` pins each file by URL and sha256; `fetch.sh` downloads and checks them; `extract.py` writes
 `data/*.json` (each file records its figure, method, calibration and the source hash). Run with `--overlay DIR`,
@@ -183,10 +185,67 @@ Adopted as declared: `nova_apd.sample` and `NovaAPDBackend.detect` now draw hit 
   62.5 PE.
 - It is not validated for another front end.
 
+## Studies T3 and O2 (`study2_criteria.json`)
+
+Declared after R6 and R7 were extracted, and before any prediction of either study was computed.
+
+**T3: emulating the multi-point readout.**
+- The Niner thesis (Sec. 4.6) describes the readout:
+  - the front end records the trigger sample, the first one whose DCS v_i - v_(i-3) passes threshold;
+  - it also records the three samples before it, baseline-subtracted;
+  - an offline pulse-shape fit to these four samples gives the hit time;
+  - the resolution is the 1 %-truncated rms of hit-time differences in 25 PE bins.
+- The emulation: per bin, 20 000 Monte Carlo hits through that procedure, with the package's noise (1.5 PE) and
+  threshold (10 PE). Nothing is fitted except a constant floor on the points at 800 PE and above.
+- The test is the original low-charge histograms, so configuration E1 (B's optics + T3) is a valid NOVA-CELL
+  submission; it is on the leaderboard.
+
+**O2: in-cell attenuation from two short cells.**
+- The attenuation is fitted to the Test Beam cell (2.6 m) and the Near Detector cell (R6, 3.9 m), with a free
+  normalisation per cell. The yield comes from the Test Beam cell.
+- It is tested on the Far Detector data (NC-FD, absolute, as before) and on NOvA's simulated Far Detector curve
+  (R7, shape).
+- Configuration E2 (O2 + T3) uses R6, which is outside the NOVA-CELL dataset, so it is validation only.
+
+| Pass line | Result |
+|---|---|
+| T3: low-charge timing, both detectors | **fails**: chi2/ndf 173 (ND), 424 (FD); threshold 3 |
+| O2: NC-FD with both yields, and R7 | **fails**: NC-FD 566, far end 2.51 x the data, near/far 0.46 x; R7 2584 (threshold 2) |
+
+What these show:
+- **T3.** With the pedestal known exactly, the samples before the pulse pin its start, and the emulated fit is
+  far better than the data above about 60 PE. The result is essentially the floor, so the emulation predicts
+  better timing than the bound alone, not worse.
+  - The data are much worse than that. Whatever limits NOvA's timing between 30 and 400 PE is not the four-sample
+    fit on an ideal pulse.
+  - Candidates: what "baseline subtracted" means in practice (subtracting sample i-3 would carry far less
+    information), the pulse-shape variation with charge reported for the NOvA electronics, and the pair method's
+    track and calibration corrections.
+  - Post hoc (`record.json` `post_hoc.tick_limited_fraction`): a charge-dependent fraction of hits with only
+    tick-limited timing (tick / sqrt(12)) would need fractions of 0.55 / 0.47 (ND / FD) at 12.5 PE, but
+    0.060 / 0.026 at 112.5 PE and 0.012 / 0.001 at 362.5 PE. That is not one fraction shared by the two detectors.
+- **O2.** Cells of 2.6 m and 3.9 m do not constrain the long attenuation component, and the fit drives it to
+  infinity (atten_long about 2e14 mm). The Far Detector far end is then 2.5 times too bright.
+  - The two cells also differ in brightness by a factor 1.9 (yields 26.5 and 49.4 photons/MeV), so one yield does
+    not carry between detectors.
+  - A Far Detector default still needs a long in-cell curve.
+- **Optics against NOvA's simulation** (E1's optics, from the fibre spool curve):
+  - The shape is flagged against R7 (chi2/ndf 22.9 with the simulation's 0.9 % scatter): 4.5 % rms, 7 % at most.
+  - The readout-end / far-end ratio is 5.24 in the model, 4.77 in NOvA's simulation and 3.73 in the Far Detector
+    data (R2).
+  - So the model is about 10 % from the collaboration's uncalibrated simulation in this ratio. That simulation is
+    itself about 28 % from the data, the kind of difference the collaboration's per-cell attenuation calibration of
+    the data absorbs.
+  - Caveat: the selections differ (simulated deposits > 15 MeV against cosmic-muon hits per cm), and the two
+    figures are from different years.
+- **Threshold bias.** The Pershey thesis also shows a simulated threshold correction to the mean PE/cm that varies
+  along the cell (its Fig. 7.3). The model compares the mean of all deposits, not of hits above threshold. This
+  is a candidate for part of the Far Detector difference that is not tested here.
+
 ## Running
 
 ```bash
-bash validation/nova_cell/fetch.sh SRC_DIR                                  # 25 MB, sha256 checked
+bash validation/nova_cell/fetch.sh SRC_DIR                                  # about 52 MB, sha256 checked
 python validation/nova_cell/extract.py SRC_DIR [--overlay DIR]              # needs '.[extract]'
 python validation/nova_cell/compare.py OUT_DIR                              # needs '.[validation]'; writes record.json
 ```

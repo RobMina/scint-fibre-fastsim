@@ -1,14 +1,17 @@
 {
  "criteria_sha256": "955fdbacb6fc032b8f6108474b543a432597caf1c4a9f0c2845d75145abe9a80",
  "timing_criteria_sha256": "609ca5456b95850f4da6499b4a30dac6a778687c5aa484b9fcd002040ec077ee",
+ "study2_criteria_sha256": "2bacb537c58a2a09b5a5d4438b262dc449201a64f943c3a1d87ab7ff5127e7fd",
  "data_sha256": {
   "r1_testbeam_cell.json": "bec810f30831b25eb9a0450ec93b3271c632b209faf8eba39c9fe14abe573ec9",
   "r2_fd_cell.json": "b25b78619c0e1d7ee1b69b4bca236652cbb80fd5e677f58d834e8c42d05d16b1",
   "r4_fibre.json": "ae1ea994d21ae8b046511e1751265d5ec5ae61d0f540f1ba59a37fe5661f89c4",
   "r5_timing_fd.json": "4be959ed8a1b65f1bc3d79cdc1083789c7fd9b76ec0b4343cf0cf7df9edf2a28",
-  "r5_timing_nd.json": "b68b68dc1a8d0948029e38efc4d33544ceac13ee859d027ba1e02d1e89cb432e"
+  "r5_timing_nd.json": "b68b68dc1a8d0948029e38efc4d33544ceac13ee859d027ba1e02d1e89cb432e",
+  "r6_nd_cell.json": "37854bf0827f185723085786bbdc4cbdf071b149c91728b6d9690a37e2ccd757",
+  "r7_fd_simulation.json": "c8f126ddcc18e87168aed61142e2bc6ad2dd0c3b58a2968b421e493f40ce8727"
  },
- "scint_fibre_fastsim": "920829a (dirty)",
+ "scint_fibre_fastsim": "777c9a7",
  "hep_simbench": "0.1.0",
  "empirical_errors": {
   "NC-TB": null,
@@ -1005,6 +1008,611 @@
      }
     }
    }
+  },
+  "E1_multipoint": {
+   "parameters": {
+    "optics": {
+     "yield_per_mev": 28.31866332896844,
+     "birks_kb": 0.125,
+     "birks_kc": 0.0,
+     "frac_short": 0.5520943934235364,
+     "atten_short": 2654.513053954124,
+     "atten_long": 8652.883246981535,
+     "speed": 170.0,
+     "decay": 10.0
+    },
+    "fibre_offset": 0.2227452041436349,
+    "timing": {
+     "model": "mp",
+     "time_floor": {
+      "nd": 5.2919,
+      "fd": 9.1316
+     }
+    },
+    "note": "study T3; a NOVA-CELL submission (train split only)"
+   },
+   "validity_mean": 0.6,
+   "max_rel_dtype_diff": 1.2236254855168974e-06,
+   "workflows": {
+    "NC-FD": {
+     "float32": {
+      "validity": 0.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 99.44179201052492,
+        "ndf": 30,
+        "p": 0.0,
+        "floor": 1.0,
+        "threshold": 3.0,
+        "flag": true
+       }
+      },
+      "yields": {
+       "far_end": {
+        "ratio": 0.5945173948446318,
+        "se": 0.020072584252034825,
+        "pass": false
+       },
+       "near_over_far": {
+        "ratio": 1.479340492418417,
+        "se": 0.05170998899420767,
+        "pass": false
+       }
+      }
+     },
+     "float64": {
+      "validity": 0.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 99.44177894561537,
+        "ndf": 30,
+        "p": 0.0,
+        "floor": 1.0,
+        "threshold": 3.0,
+        "flag": true
+       }
+      },
+      "yields": {
+       "far_end": {
+        "ratio": 0.5945174275002516,
+        "se": 0.020072585354580664,
+        "pass": false
+       },
+       "near_over_far": {
+        "ratio": 1.4793403062021235,
+        "se": 0.051709982485062186,
+        "pass": false
+       }
+      }
+     }
+    },
+    "NC-FIBRE": {
+     "float32": {
+      "validity": 1.0,
+      "hists": {
+       "ln_i": {
+        "chi2ndf": 0.09769139819810449,
+        "ndf": 26,
+        "p": 0.9999999988918845,
+        "floor": null,
+        "threshold": 2.0,
+        "flag": false
+       }
+      },
+      "yields": {}
+     },
+     "float64": {
+      "validity": 1.0,
+      "hists": {
+       "ln_i": {
+        "chi2ndf": 0.09769093237858927,
+        "ndf": 26,
+        "p": 0.999999998891947,
+        "floor": null,
+        "threshold": 2.0,
+        "flag": false
+       }
+      },
+      "yields": {}
+     }
+    },
+    "NC-TB": {
+     "float32": {
+      "validity": 1.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 4.977544172901648,
+        "ndf": 66,
+        "p": 1.7112914303422422e-36,
+        "floor": 9.768323320948687,
+        "threshold": 29.30496996284606,
+        "flag": false
+       }
+      },
+      "yields": {
+       "centre": {
+        "ratio": 0.9837146533328643,
+        "se": 0.004350975073123222,
+        "pass": true
+       }
+      }
+     },
+     "float64": {
+      "validity": 1.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 4.977551181333141,
+        "ndf": 66,
+        "p": 1.7109722077203504e-36,
+        "floor": 9.768323320948687,
+        "threshold": 29.30496996284606,
+        "flag": false
+       }
+      },
+      "yields": {
+       "centre": {
+        "ratio": 0.9837146431219778,
+        "se": 0.004350975027960417,
+        "pass": true
+       }
+      }
+     }
+    },
+    "NC-TFD": {
+     "float32": {
+      "validity": 0.5,
+      "hists": {
+       "sigma_high": {
+        "chi2ndf": 0.9230793219040228,
+        "ndf": 32,
+        "p": 0.5917106085643415,
+        "floor": 0.9999999999999998,
+        "threshold": 2.999999999999999,
+        "flag": false
+       },
+       "sigma_low": {
+        "chi2ndf": 423.99868854389683,
+        "ndf": 16,
+        "p": 0.0,
+        "floor": 1.0000000000000002,
+        "threshold": 3.000000000000001,
+        "flag": true
+       }
+      },
+      "yields": {}
+     },
+     "float64": {
+      "validity": 0.5,
+      "hists": {
+       "sigma_high": {
+        "chi2ndf": 0.9230793219040228,
+        "ndf": 32,
+        "p": 0.5917106085643415,
+        "floor": 0.9999999999999998,
+        "threshold": 2.999999999999999,
+        "flag": false
+       },
+       "sigma_low": {
+        "chi2ndf": 423.9986798962816,
+        "ndf": 16,
+        "p": 0.0,
+        "floor": 1.0000000000000002,
+        "threshold": 3.000000000000001,
+        "flag": true
+       }
+      },
+      "yields": {}
+     }
+    },
+    "NC-TND": {
+     "float32": {
+      "validity": 0.5,
+      "hists": {
+       "sigma_high": {
+        "chi2ndf": 0.9828135269373577,
+        "ndf": 32,
+        "p": 0.4942433102488396,
+        "floor": 1.0000000000000002,
+        "threshold": 3.000000000000001,
+        "flag": false
+       },
+       "sigma_low": {
+        "chi2ndf": 172.9680275095543,
+        "ndf": 16,
+        "p": 0.0,
+        "floor": 1.0,
+        "threshold": 3.0,
+        "flag": true
+       }
+      },
+      "yields": {}
+     },
+     "float64": {
+      "validity": 0.5,
+      "hists": {
+       "sigma_high": {
+        "chi2ndf": 0.9828135269373577,
+        "ndf": 32,
+        "p": 0.4942433102488396,
+        "floor": 1.0000000000000002,
+        "threshold": 3.000000000000001,
+        "flag": false
+       },
+       "sigma_low": {
+        "chi2ndf": 172.9680277567738,
+        "ndf": 16,
+        "p": 0.0,
+        "floor": 1.0,
+        "threshold": 3.0,
+        "flag": true
+       }
+      },
+      "yields": {}
+     }
+    }
+   },
+   "extra_workflows": {
+    "NC-FDSIM": {
+     "float32": {
+      "validity": 0.0,
+      "hists": {
+       "ratio": {
+        "chi2ndf": 22.937394933062148,
+        "ndf": 88,
+        "p": 0.0,
+        "threshold": 2.0,
+        "flag": true
+       }
+      }
+     },
+     "float64": {
+      "validity": 0.0,
+      "hists": {
+       "ratio": {
+        "chi2ndf": 22.9373633515435,
+        "ndf": 88,
+        "p": 0.0,
+        "threshold": 2.0,
+        "flag": true
+       }
+      }
+     }
+    },
+    "NC-ND": {
+     "float32": {
+      "validity": 1.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 2.5268896201093463,
+        "ndf": 16,
+        "p": 0.0006735151610394521,
+        "threshold": 3.0,
+        "flag": false
+       }
+      }
+     },
+     "float64": {
+      "validity": 1.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 2.526887062565477,
+        "ndf": 16,
+        "p": 0.0006735244700925748,
+        "threshold": 3.0,
+        "flag": false
+       }
+      }
+     }
+    }
+   }
+  },
+  "E2_incell_multipoint": {
+   "parameters": {
+    "optics": {
+     "yield_per_mev": 26.482246468221284,
+     "birks_kb": 0.125,
+     "birks_kc": 0.0,
+     "frac_short": 0.6345395384191433,
+     "atten_short": 2333.825407658085,
+     "atten_long": 238184846368247.84,
+     "speed": 170.0,
+     "decay": 10.0
+    },
+    "fibre_offset": 0.2227452041436349,
+    "timing": {
+     "model": "mp",
+     "time_floor": {
+      "nd": 5.2919,
+      "fd": 9.1316
+     }
+    },
+    "o2_fit": {
+     "frac_short": 0.6345395384191433,
+     "atten_short": 2333.825407658085,
+     "atten_long": 238184846368247.84,
+     "yield_tb": 26.482246468221284,
+     "yield_nd": 49.42996573301104,
+     "chi2ndf": {
+      "NC-TB": 4.615096448563579,
+      "NC-ND": 1.8824008482140793
+     }
+    },
+    "note": "studies O2 + T3; uses R6 (outside the NOVA-CELL dataset): validation only"
+   },
+   "validity_mean": 0.4,
+   "max_rel_dtype_diff": 3.6536452493765005e-07,
+   "workflows": {
+    "NC-FD": {
+     "float32": {
+      "validity": 0.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 566.3568954339139,
+        "ndf": 30,
+        "p": 0.0,
+        "floor": 1.0,
+        "threshold": 3.0,
+        "flag": true
+       }
+      },
+      "yields": {
+       "far_end": {
+        "ratio": 2.5071265507973326,
+        "se": 0.08464766440441071,
+        "pass": false
+       },
+       "near_over_far": {
+        "ratio": 0.45564775704266774,
+        "se": 0.01592705710596314,
+        "pass": false
+       }
+      }
+     },
+     "float64": {
+      "validity": 0.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 566.3568991180312,
+        "ndf": 30,
+        "p": 0.0,
+        "floor": 1.0,
+        "threshold": 3.0,
+        "flag": true
+       }
+      },
+      "yields": {
+       "far_end": {
+        "ratio": 2.507126598881634,
+        "se": 0.08464766602787235,
+        "pass": false
+       },
+       "near_over_far": {
+        "ratio": 0.4556477646450557,
+        "se": 0.01592705737170277,
+        "pass": false
+       }
+      }
+     }
+    },
+    "NC-FIBRE": {
+     "float32": {
+      "validity": 0.0,
+      "hists": {
+       "ln_i": {
+        "chi2ndf": 25384.338589281284,
+        "ndf": 26,
+        "p": 0.0,
+        "floor": null,
+        "threshold": 2.0,
+        "flag": true
+       }
+      },
+      "yields": {}
+     },
+     "float64": {
+      "validity": 0.0,
+      "hists": {
+       "ln_i": {
+        "chi2ndf": 25384.339728008512,
+        "ndf": 26,
+        "p": 0.0,
+        "floor": null,
+        "threshold": 2.0,
+        "flag": true
+       }
+      },
+      "yields": {}
+     }
+    },
+    "NC-TB": {
+     "float32": {
+      "validity": 1.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 4.615095171819943,
+        "ndf": 66,
+        "p": 2.4283389163517416e-32,
+        "floor": 9.768323320948687,
+        "threshold": 29.30496996284606,
+        "flag": false
+       }
+      },
+      "yields": {
+       "centre": {
+        "ratio": 0.9827779346776608,
+        "se": 0.004346831961596407,
+        "pass": true
+       }
+      }
+     },
+     "float64": {
+      "validity": 1.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 4.6150964485635875,
+        "ndf": 66,
+        "p": 2.4282579277660222e-32,
+        "floor": 9.768323320948687,
+        "threshold": 29.30496996284606,
+        "flag": false
+       }
+      },
+      "yields": {
+       "centre": {
+        "ratio": 0.9827779021524198,
+        "se": 0.004346831817737095,
+        "pass": true
+       }
+      }
+     }
+    },
+    "NC-TFD": {
+     "float32": {
+      "validity": 0.5,
+      "hists": {
+       "sigma_high": {
+        "chi2ndf": 0.9230793219040228,
+        "ndf": 32,
+        "p": 0.5917106085643415,
+        "floor": 0.9999999999999998,
+        "threshold": 2.999999999999999,
+        "flag": false
+       },
+       "sigma_low": {
+        "chi2ndf": 423.99868854389683,
+        "ndf": 16,
+        "p": 0.0,
+        "floor": 1.0000000000000002,
+        "threshold": 3.000000000000001,
+        "flag": true
+       }
+      },
+      "yields": {}
+     },
+     "float64": {
+      "validity": 0.5,
+      "hists": {
+       "sigma_high": {
+        "chi2ndf": 0.9230793219040228,
+        "ndf": 32,
+        "p": 0.5917106085643415,
+        "floor": 0.9999999999999998,
+        "threshold": 2.999999999999999,
+        "flag": false
+       },
+       "sigma_low": {
+        "chi2ndf": 423.9986798962816,
+        "ndf": 16,
+        "p": 0.0,
+        "floor": 1.0000000000000002,
+        "threshold": 3.000000000000001,
+        "flag": true
+       }
+      },
+      "yields": {}
+     }
+    },
+    "NC-TND": {
+     "float32": {
+      "validity": 0.5,
+      "hists": {
+       "sigma_high": {
+        "chi2ndf": 0.9828135269373577,
+        "ndf": 32,
+        "p": 0.4942433102488396,
+        "floor": 1.0000000000000002,
+        "threshold": 3.000000000000001,
+        "flag": false
+       },
+       "sigma_low": {
+        "chi2ndf": 172.9680275095543,
+        "ndf": 16,
+        "p": 0.0,
+        "floor": 1.0,
+        "threshold": 3.0,
+        "flag": true
+       }
+      },
+      "yields": {}
+     },
+     "float64": {
+      "validity": 0.5,
+      "hists": {
+       "sigma_high": {
+        "chi2ndf": 0.9828135269373577,
+        "ndf": 32,
+        "p": 0.4942433102488396,
+        "floor": 1.0000000000000002,
+        "threshold": 3.000000000000001,
+        "flag": false
+       },
+       "sigma_low": {
+        "chi2ndf": 172.9680277567738,
+        "ndf": 16,
+        "p": 0.0,
+        "floor": 1.0,
+        "threshold": 3.0,
+        "flag": true
+       }
+      },
+      "yields": {}
+     }
+    }
+   },
+   "extra_workflows": {
+    "NC-FDSIM": {
+     "float32": {
+      "validity": 0.0,
+      "hists": {
+       "ratio": {
+        "chi2ndf": 2584.2518680777157,
+        "ndf": 88,
+        "p": 0.0,
+        "threshold": 2.0,
+        "flag": true
+       }
+      }
+     },
+     "float64": {
+      "validity": 0.0,
+      "hists": {
+       "ratio": {
+        "chi2ndf": 2584.2519800699533,
+        "ndf": 88,
+        "p": 0.0,
+        "threshold": 2.0,
+        "flag": true
+       }
+      }
+     }
+    },
+    "NC-ND": {
+     "float32": {
+      "validity": 1.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 1.8824001385151763,
+        "ndf": 16,
+        "p": 0.017397862083751724,
+        "threshold": 3.0,
+        "flag": false
+       }
+      }
+     },
+     "float64": {
+      "validity": 1.0,
+      "hists": {
+       "pe_per_cm": {
+        "chi2ndf": 1.8824008482140808,
+        "ndf": 16,
+        "p": 0.017397805038629564,
+        "threshold": 3.0,
+        "flag": false
+       }
+      }
+     }
+    }
+   }
   }
  },
  "post_hoc": {
@@ -1052,6 +1660,63 @@
    "data_ns": 99.1372,
    "crb_ns": 96.74820238239452,
    "crb_with_floor_ns": 97.17235649460586
+  },
+  "tick_limited_fraction": {
+   "comment": "(sigma^2 - floor^2) / (tick^2 / 12) per low-charge bin: the fraction of hits with tick-limited timing that would explain the excess; the same in ND and FD if that were the mechanism",
+   "pe": [
+    12.5,
+    37.5,
+    62.5,
+    87.5,
+    112.5,
+    137.5,
+    162.5,
+    187.5,
+    212.5,
+    237.5,
+    262.5,
+    287.5,
+    312.5,
+    337.5,
+    362.5,
+    387.5
+   ],
+   "nd": [
+    0.5533564010496002,
+    0.24439864909823997,
+    0.14503746845952,
+    0.08466920324351998,
+    0.060082256486400004,
+    0.042012599616000006,
+    0.03091948280064,
+    0.027067709030399994,
+    0.021108391833599995,
+    0.0191161872384,
+    0.018161146367999995,
+    0.016905067952639997,
+    0.014071968268800004,
+    0.01328081854464,
+    0.012449521728000002,
+    0.011292154675200002
+   ],
+   "fd": [
+    0.4677503186534401,
+    0.22851647814960002,
+    0.0886928696376,
+    0.0445586636088,
+    0.0264464940672,
+    0.016745420630400003,
+    0.01157366771712,
+    0.008385509109120004,
+    0.006349615964639999,
+    0.0044963597952,
+    0.00349362680064,
+    0.002846366181599999,
+    0.0022283253599999987,
+    0.001639504335839999,
+    0.0013560005318399991,
+    0.0008283317687999991
+   ]
   }
  },
  "t2_tick_variant": {
@@ -1068,6 +1733,8 @@
   "optics_validated": false,
   "timing_validated": false,
   "timing_transfer_validated": false,
-  "dtype_agreement": true
+  "dtype_agreement": true,
+  "multipoint_timing_validated": false,
+  "incell_optics_validated": false
  }
 }

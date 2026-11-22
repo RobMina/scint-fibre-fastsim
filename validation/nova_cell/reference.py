@@ -111,8 +111,45 @@ def timing(which: str) -> dict:
                     "mode": "values", "readout_tick_ns": d["readout_tick_ns"], "empirical_errors": sigs}}
 
 
+def nd() -> dict:
+    """R6, validation only (study O2): the Near Detector cell, errors from the scatter about the thesis' fit."""
+    d = load("r6_nd_cell")
+    x, y = np.array(d["x_cm"]), np.array(d["pe_per_cm"])
+    fit = np.interp(x, d["fit_attenuation"]["x_cm"], d["fit_attenuation"]["pe_per_cm"])
+    sig = float(np.sqrt(np.mean((y - fit) ** 2)))
+    w = d["bin_cm"]
+    edges = [float(x[0] - w / 2)] + [float(v) for v in 0.5 * (x[1:] + x[:-1])] + [float(x[-1] + w / 2)]
+    return {"centres": x, "stock": {"hists": {"pe_per_cm": {"edges": edges, "values": y.tolist(),
+                                                                                  "errors": [sig] * len(y)}}},
+            "floor": {"hists": {"pe_per_cm": {"edges": edges, "values": fit.tolist(), "errors": [0.0] * len(y)}}},
+            "cfg": {"boundary": "cosmic-ray muon along a 3.9 m Near Detector cell -> mean PE per cm", "mode": "values",
+                    "cell_length_mm": 3900.0, "dedx_mev_per_cm": 1.8, "empirical_error": sig,
+                    "note": "10 cm bins where markers are visible (bins hidden under the fit curves are missing); the edges are midpoints between the bin centres, so read the centres, not the widths"}}
+
+
+def fdsim() -> dict:
+    """R7, validation only (study O2): NOvA's simulated Far Detector attenuation, shape over |W| <= 700 cm; errors
+    from the scatter of the calibrated series about its mean."""
+    d = load("r7_fd_simulation")
+    u, c = d["uncalibrated"], d["calibrated"]
+    x, y = np.array(u["w_cm"]), np.array(u["ratio"])
+    xc, yc = np.array(c["w_cm"]), np.array(c["ratio"])
+    sel, selc = np.abs(x) <= 700.0, np.abs(xc) <= 700.0
+    sig = float(np.std(yc[selc], ddof=1))
+    x, y = x[sel], y[sel]
+    edges = np.append(x - 8.0, x[-1] + 8.0)
+    return {"centres": x, "stock": {"hists": {"ratio": _h(edges, y, np.full_like(y, sig))}}, "floor": None,
+            "cfg": {"boundary": "position along a 15 m Far Detector cell -> relative response (NOvA simulation)",
+                    "mode": "values", "cell_length_mm": 15000.0, "empirical_error": sig, "normalisation": "free"}}
+
+
 def build() -> dict:
     return {"NC-TB": tb(), "NC-FIBRE": fibre(), "NC-FD": fd(), "NC-TND": timing("nd"), "NC-TFD": timing("fd")}
+
+
+def build_extra() -> dict:
+    """Validation-only workflows (study O2); not part of the NOVA-CELL benchmark."""
+    return {"NC-ND": nd(), "NC-FDSIM": fdsim()}
 
 
 def write(out: Path, tasks: dict | None = None) -> dict:
@@ -124,7 +161,7 @@ def write(out: Path, tasks: dict | None = None) -> dict:
         if t["floor"] is not None:
             (d / "floor").mkdir(exist_ok=True)
             (d / "floor" / "hists.json").write_text(json.dumps(t["floor"], indent=1))
-        cfg = {"stock_rate_per_slot": None, "split": SPLIT[w], "yield_tolerance": 0.05, **t["cfg"],
+        cfg = {"stock_rate_per_slot": None, "split": SPLIT.get(w, "validation only"), "yield_tolerance": 0.05, **t["cfg"],
                "source": "scint-fibre-fastsim validation/nova_cell (public data; see its README)"}
         (d / "reference.json").write_text(json.dumps(cfg, indent=1))
     return tasks

@@ -64,11 +64,12 @@ def test_crb_is_reached_by_a_template_fit():
 
 
 def test_validation_data_are_complete():
-    want = {"r1_testbeam_cell": 94, "r2_fd_cell": 32, "r4_fibre": 26, "r5_timing_nd": 64, "r5_timing_fd": 64}
+    want = {"r1_testbeam_cell": 94, "r2_fd_cell": 32, "r4_fibre": 26, "r5_timing_nd": 64, "r5_timing_fd": 64,
+            "r6_nd_cell": 16, "r7_fd_simulation": 98}
     src = json.loads((VAL / "sources.json").read_text())["sources"]
     for name, n in want.items():
         d = json.loads((VAL / "data" / f"{name}.json").read_text())
-        x = d.get("x_cm") or d.get("x_m") or d.get("pe")
+        x = d.get("x_cm") or d.get("x_m") or d.get("pe") or d["uncalibrated"]["w_cm"]
         assert len(x) == n, name
         assert d["source_sha256"] == src[d["source"]]["sha256"]
 
