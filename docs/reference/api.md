@@ -14,7 +14,7 @@
 - `Arrival` (pre-PDE optical arrival), `PhotosensorBackend`
 - `Mu2eSiPMBackend`, `SiPMConfigView` (full stand-in for stock `simulate`)
 - `bind_crvfastsim_sipm`, `bind_crvfastsim_sipm_synthetic`, `uniform_photon_map`
-- `NovaAPDBackend`, `APDParams`, `Readout`, `NOVA_APD`, `NOVA_ND_READOUT`; `nova_apd.expected`, `nova_apd.sample`, `nova_apd.pulse`, `nova_apd.pulse_slope`, `nova_apd.timing_crb` (Cramér–Rao bound on the hit time from the DCS samples), `nova_apd.time_resolution` (the sampler's hit-time model; `APDParams.time_kappa`, `time_floor` replace `time_res`)
+- `NovaAPDBackend`, `APDParams`, `Readout`, `NOVA_APD`, `NOVA_ND_READOUT`; `nova_apd.expected`, `nova_apd.sample`, `nova_apd.pulse`, `nova_apd.pulse_slope`, `nova_apd.timing_crb` (Cramér–Rao bound on the hit time from the DCS samples), `nova_apd.time_resolution` (the sampler's hit-time model; `APDParams.time_kappa`, `time_floor` replace `time_res`), `nova_apd.saturate` and `nova_apd.expected_adc` (ADC ceiling: `APDParams.adc_max`, `adc_max_sigma`, `sat_recovery`), `nova_apd.coupled` and `nova_apd.group_others` (board crosstalk: `APDParams.crosstalk`, `groups=` on `expected` and `sample`)
 
 ## `scintfibrefastsim.geometry`
 
