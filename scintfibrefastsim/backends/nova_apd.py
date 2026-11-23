@@ -7,7 +7,13 @@ Model (public-paper scales; an experiment adapter overrides every value):
 - the front end shapes each photoelectron with a unit-peak CR-RC pulse ``exp(-t/tau_fall) - exp(-t/tau_rise)``,
   samples every ``tick`` ns with Gaussian noise ``noise_pe`` per sample, and triggers on dual-correlated sampling
   (``v[j] - v[j - dcs_lag]``) above ``threshold_pe``;
-- the recorded charge is the DCS peak in ADC (``adc_per_pe`` per photoelectron).
+- the recorded charge is the DCS peak in ADC (``adc_per_pe`` per photoelectron), capped at an ADC ceiling
+  ``adc_max`` that varies from hit to hit with standard deviation ``adc_max_sigma`` (digitiser range less the
+  pedestal); a saturated pulse's charge estimate grows only logarithmically past the ceiling, with strength
+  ``sat_recovery`` (what a pulse fit to the unsaturated samples recovers). No ceiling by default;
+- channels that share an APD and front-end board can couple: with ``groups`` given, each channel's charge is reduced
+  by ``crosstalk`` times the summed charge of the other channels in its group (a common-mode baseline shift of
+  simultaneous pulses; small hits next to a busy board drop below threshold). No coupling by default.
 
 Three forms share these parameters:
 
@@ -50,6 +56,10 @@ class APDParams(NamedTuple):
     clock_phase: float = 0.0       # ns
     time_kappa: float = 0.449      # extra hit-time spread kappa x tau_rise / sqrt(n_pe) (time_resolution); ND fit
     time_floor: float = 6.09       # ns, constant hit-time term (calibration, clock); ND fit
+    adc_max: float = math.inf      # ADC ceiling of the DCS peak (none by default)
+    adc_max_sigma: float = 0.0     # hit-to-hit spread of the ceiling, ADC
+    sat_recovery: float = 0.0      # charge estimate of a saturated pulse: q_ceiling (1 + sat_recovery ln(peak / ceiling))
+    crosstalk: float = 0.0         # fraction of the other channels' summed charge in the group subtracted from each
 
 
 @dataclass(frozen=True)
@@ -156,17 +166,66 @@ _GH_X, _GH_W = np.polynomial.hermite_e.hermegauss(12)
 _GH_W = _GH_W / _GH_W.sum()
 
 
-def expected(pe, time, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT):
-    """Expected DCS peak (ADC) and hit probability for expected photoelectrons ``pe`` arriving at ``time``.
+def saturate(peak, ceiling, p: APDParams):
+    """``(adc, charge_factor)`` of DCS peaks ``peak`` (ADC) against per-hit ceilings ``ceiling`` (ADC): the recorded
+    peak ``min(peak, ceiling)`` and the factor that turns the drawn charge into the recorded charge estimate, 1 below
+    the ceiling and ``(ceiling / peak) (1 + sat_recovery ln(peak / ceiling))`` above it. Infinite ceilings pass."""
+    xp = _xp(peak, ceiling)
+    sat = peak > ceiling
+    ratio = xp.where(sat, peak / xp.where(sat, ceiling, 1.0), 1.0)
+    factor = xp.where(sat, (1.0 + p.sat_recovery * xp.log(ratio)) / ratio, 1.0)
+    return xp.minimum(peak, ceiling), factor
+
+
+def expected_adc(adc, p: APDParams):
+    """Expected recorded ADC ``E[min(adc, M)]`` for a linear peak ``adc`` and a ceiling ``M ~ N(adc_max,
+    adc_max_sigma^2)``: ``adc - (adc - m) Phi(z) - s phi(z)`` with ``z = (adc - m) / s``; ``min(adc, m)`` when
+    ``s = 0`` and ``adc`` when there is no ceiling."""
+    xp = _xp(adc, p.adc_max)
+    m = xp.asarray(p.adc_max, adc.dtype) if hasattr(adc, "dtype") else p.adc_max
+    finite = xp.isfinite(m)
+    m_s = xp.where(finite, m, 0.0)
+    s = xp.maximum(xp.asarray(p.adc_max_sigma, m_s.dtype) if hasattr(m_s, "dtype") else p.adc_max_sigma, 1e-9)
+    z = (adc - m_s) / s
+    smooth = adc - (adc - m_s) * _ndtr(z) - s * xp.exp(-0.5 * z * z) / math.sqrt(2.0 * math.pi)
+    return xp.where(finite, smooth, adc)
+
+
+def group_others(q, groups):
+    """Per channel, the summed ``q`` of the other channels with the same ``groups`` id (ids in ``[0, q.size)``)."""
+    xp = _xp(q)
+    flat, gid = q.reshape(-1), groups.reshape(-1)
+    if xp is np:
+        tot = np.bincount(gid, weights=flat, minlength=flat.size)
+    else:
+        import jax
+        tot = jax.ops.segment_sum(flat, gid, num_segments=flat.size)
+    return (tot[gid] - flat).reshape(q.shape)
+
+
+def coupled(q, groups, p: APDParams):
+    """Charge after the group common mode: ``q - crosstalk * (others' summed charge)``, floored at 0; ``q`` without
+    groups. Pulses in a group are taken as simultaneous (they share the sampling shape of the channel)."""
+    if groups is None:
+        return q
+    xp = _xp(q)
+    return xp.maximum(q - p.crosstalk * group_others(q, groups), 0.0)
+
+
+def expected(pe, time, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT, groups=None):
+    """Expected DCS peak (ADC, capped by :func:`expected_adc`) and hit probability for expected photoelectrons ``pe``
+    arriving at ``time``.
 
     The hit probability averages, over the charge fluctuation, the probability that any DCS sample passes the
     threshold with independent noise ``sqrt(2) noise_pe`` per sample. The charge (mean ``pe``, variance
     ``F * pe``) is a gamma variable through the Wilson-Hilferty transform of Gauss-Hermite nodes, which keeps the
-    right skew of the compound-Poisson charge at low ``pe``."""
+    right skew of the compound-Poisson charge at low ``pe``. With ``groups``, the expected charges are first coupled
+    (:func:`coupled`); the charge fluctuation is then taken around the coupled charge."""
     xp = _xp(pe, time)
+    pe = coupled(pe, groups, p)
     shape = dcs(pulse(sample_times(time, p, ro), p), ro.dcs_lag)               # [..., n_samples]
     peak = xp.max(shape, axis=-1)
-    adc = pe * p.adc_per_pe * peak
+    adc = expected_adc(pe * p.adc_per_pe * peak, p)
     sig = xp.sqrt(2.0) * p.noise_pe
     k = xp.maximum(pe, 1e-12) / p.excess_noise                                   # gamma shape
     c = 1.0 / (9.0 * k[..., None])
@@ -177,21 +236,28 @@ def expected(pe, time, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT):
     return adc, xp.sum(xp.asarray(_GH_W, pe.dtype) * (1.0 - miss), axis=-1)
 
 
-def sample(key, pe, time, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT):
-    """One draw per channel (JAX): Poisson photoelectrons, APD gain fluctuation, per-sample noise, DCS threshold and
-    time jitter (:func:`time_resolution` at the drawn charge). Returns ``(charge_pe, adc, time, hit)``; ADC rounded."""
+def sample(key, pe, time, p: APDParams = NOVA_APD, ro: Readout = NOVA_ND_READOUT, groups=None):
+    """One draw per channel (JAX): Poisson photoelectrons, APD gain fluctuation, per-sample noise, DCS threshold,
+    ADC ceiling (:func:`saturate`) and time jitter (:func:`time_resolution` at the drawn charge). Returns
+    ``(charge_pe, adc, time, hit)``: the recorded charge estimate (the drawn charge, after the group coupling with
+    ``groups``, below the ceiling), the recorded ADC (rounded), the time and the threshold decision (on the uncapped
+    peak)."""
     import jax
     import jax.numpy as jnp
 
     k1, k2, k3, k4 = jax.random.split(key, 4)
     n = jax.random.poisson(k1, pe).astype(pe.dtype)
     q = jnp.maximum(n + jnp.sqrt(n * (p.excess_noise - 1.0)) * jax.random.normal(k2, pe.shape, pe.dtype), 0.0)
+    q = coupled(q, groups, p)
     g = p.adc_per_pe
     shape = pulse(sample_times(time, p, ro), p)
     wave = q[..., None] * g * shape + p.noise_pe * g * jax.random.normal(k3, shape.shape, pe.dtype)
     peak = jnp.max(dcs(wave, ro.dcs_lag), axis=-1)
     t = time + time_resolution(q, p, ro) * jax.random.normal(k4, pe.shape, pe.dtype)
-    return q, jnp.round(peak), t, peak > p.threshold_pe * g
+    # the ceiling draws its own stream, so the other draws are those of a front end without one
+    ceiling = p.adc_max + p.adc_max_sigma * jax.random.normal(jax.random.fold_in(key, 5), pe.shape, pe.dtype)
+    adc, factor = saturate(peak, ceiling, p)
+    return q * factor, jnp.round(adc), t, peak > p.threshold_pe * g
 
 
 class NovaAPDBackend:
@@ -209,7 +275,8 @@ class NovaAPDBackend:
     def detect(self, arrivals: list[Arrival], *, seed: int = 1) -> dict:
         """Per channel: photoelectrons drawn with ``qe``, each with its own arrival time and gain (mean 1, variance
         ``F - 1``), summed into the sampled waveform with noise; DCS peak, threshold, and the mean photoelectron time
-        with jitter. Returns ``n_photons``, ``n_pe``, ``adc``, ``time``, ``hit`` per channel."""
+        with jitter; the ADC is capped at the ceiling. Returns ``n_photons``, ``n_pe``, ``adc``, ``time``, ``hit`` per
+        channel."""
         p, ro = self.params, self.readout
         rng = np.random.default_rng(seed)
         ch = np.array([a.channel for a in arrivals], np.int64)
@@ -228,7 +295,11 @@ class NovaAPDBackend:
             wave = (gain[sel, None] * pulse(taus[None, :] - (t[sel, None] - t0), p)).sum(0) * p.adc_per_pe
             wave = wave + p.noise_pe * p.adc_per_pe * rng.normal(size=wave.shape)
             peak = dcs(wave, ro.dcs_lag).max()
-            adc[c] = np.round(peak)
+            if np.isfinite(p.adc_max):
+                peak_rec, _ = saturate(peak, p.adc_max + p.adc_max_sigma * rng.normal(), p)
+            else:
+                peak_rec = peak
+            adc[c] = np.round(peak_rec)
             hit[c] = peak > p.threshold_pe * p.adc_per_pe
             if sel.any():
                 tm[c] = t[sel].mean() + float(time_resolution(np.array(float(sel.sum())), p, ro)) * rng.normal()
