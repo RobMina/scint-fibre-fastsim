@@ -287,6 +287,8 @@ class Kernel:
         self.R_plus = self.model.refl_reflector if c.reflector == 1 else 0.0
         self.contact = self.model.fiber_end == "contact"
         self.rough = self.model.rough_fiber_air
+        self.faces = c.faces                       # polygon profiles: (nx, ny, h) per face; None: rounded rectangle
+        self.single = c.n_fibers == 1              # one fiber at the origin
 
     # --------------------------------------------------------------------------------------- per-lane properties
     def n_of(self, E):
@@ -329,6 +331,8 @@ class Kernel:
         e1lo, e1hi, e1ok = ellipse(self.s2, (surf == S_HOLE) & (fib == 1))
         t_e0 = jnp.where(e0ok & (e0lo > eps), e0lo, inf)
         t_e1 = jnp.where(e1ok & (e1lo > eps), e1lo, inf)
+        if self.single:                                     # no second hole
+            t_e1 = jnp.full_like(t_e1, jnp.inf)
         t_eown_far = jnp.where(fib == 0, jnp.where(e0ok & (e0hi > eps), e0hi, inf),
                                jnp.where(e1ok & (e1hi > eps), e1hi, inf))
 
@@ -348,6 +352,8 @@ class Kernel:
                            jnp.stack([0 * dy, jnp.sign(dy), 0 * dy], -1))
         n_corner = jnp.stack([(qx - ccx) / rc, (qy - ccy) / rc, 0 * qx], -1)
         n_out = jnp.where(corner[:, None], n_corner, n_face)
+        if self.faces is not None:                          # polygon: the first face the ray leaves through
+            t_out, n_out = self.polygon_exit(x, y, dx, dy, inf)
 
         # z planes
         dzs = jnp.where(dz != 0, dz, 1)
@@ -453,6 +459,19 @@ class Kernel:
                 "nreg": static(5, np.int32), "nsurf": static(6, np.int32), "nrm": nrm, "nfib": nfib.astype(jnp.int32),
                 "core_far": t_f1, "c1_far": t_f2, "bimp": bimp}
 
+    def polygon_exit(self, x, y, dx, dy, inf):
+        """Distance to the polygon boundary from inside and its outward normal [N, 3] (faces with n . d > 0)."""
+        t_out = jnp.full_like(x, inf)
+        n_out = jnp.zeros(x.shape + (3,), x.dtype)
+        for nx, ny, h in self.faces:
+            nd = nx * dx + ny * dy
+            tf = jnp.where(nd > 0, jnp.maximum((h - (nx * x + ny * y)) / jnp.where(nd > 0, nd, 1), 0), inf)
+            first = tf < t_out
+            nrm = jnp.stack([jnp.full_like(x, nx), jnp.full_like(x, ny), jnp.zeros_like(x)], -1)
+            n_out = jnp.where(first[:, None], nrm, n_out)
+            t_out = jnp.where(first, tf, t_out)
+        return t_out, n_out
+
     # --------------------------------------------------------------------------------------- helix shortcut
     def helix(self, p, d, pol, yc, R, s):
         """Move along a polygonal helix inside a circle of radius R (every hit a reflection) by path length s."""
@@ -553,20 +572,25 @@ class Kernel:
             # stock: startPosition(minR, separation/2, minZ) + (r, 0, dz), i.e. x = minR + r (the radius is added to
             # the bin's lower edge), in the +y fiber; outer bins start outside the core, even in the hole air
             x = lo["r"] + r
-            p = jnp.stack([x, jnp.full_like(r, self.s2), z], -1)
+            p = jnp.stack([x, jnp.full_like(r, self.s2), z], -1)      # single fiber: s2 = 0, the fiber at the origin
             t = jnp.zeros_like(r)
             r1, r2, r3 = self.r
             reg = jnp.where(x < r1, CORE, jnp.where(x < r2, CLAD1, jnp.where(x < r3, CLAD2, HOLE))).astype(jnp.int32)
-            fib = jnp.ones(lb.shape, jnp.int32)
+            fib = jnp.full(lb.shape, 0 if self.single else 1, jnp.int32)   # single fiber: scored on itself
             inside = jnp.ones(lb.shape, bool)
         return dict(p=p, d=mom, e=pol, E=E, t=t, reg=reg, fib=fib), inside, bad
 
     def inside_scint(self, x, y, z):
         hx, hy, rc = self.hx, self.hy, self.rc
-        ok = (jnp.abs(x) <= hx) & (jnp.abs(y) <= hy) & (jnp.abs(z) <= self.hl)
-        cx, cy = jnp.abs(x) - (hx - rc), jnp.abs(y) - (hy - rc)
-        ok &= ~((cx > 0) & (cy > 0) & (cx * cx + cy * cy > rc * rc))
-        for yc in (-self.s2, self.s2):
+        if self.faces is None:
+            ok = (jnp.abs(x) <= hx) & (jnp.abs(y) <= hy) & (jnp.abs(z) <= self.hl)
+            cx, cy = jnp.abs(x) - (hx - rc), jnp.abs(y) - (hy - rc)
+            ok &= ~((cx > 0) & (cy > 0) & (cx * cx + cy * cy > rc * rc))
+        else:
+            ok = jnp.abs(z) <= self.hl
+            for nx, ny, h in self.faces:
+                ok &= nx * x + ny * y <= h
+        for yc in ((0.0,) if self.single else (-self.s2, self.s2)):
             X, Y = x / self.ax, (y - yc) / self.ay
             ok &= X * X + Y * Y >= 1
         return ok
